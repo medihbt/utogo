@@ -1,6 +1,6 @@
-#include "../../include/utask_io.h"
+#include "../include/utask_io.h"
 
-#define UTASK_IO_DEBUG_C 1
+#define UTASK_IO_DEBUG_C 0
 #define UTASK_MEM_BLOCK_SIZE 1024
 
 char *get_name_from_buffer(char *dest, /*const*/ char *buff)
@@ -112,7 +112,7 @@ ParsedText parse_config_to_lines(char *fileName)
 /* 函数: 测试使用的主程序 */
 int main()
 {
-    ParsedText parsed_text = parse_config_to_lines("../ttext");
+    ParsedText parsed_text = parse_config_to_lines("../../bootstrap/debug_examples/main.scene.txt");
     for (ParsedNode *ptr = parsed_text.head; ptr->next != NULL; ptr = ptr->next)
         printf("%d|%s=%s\n",
                ptr->line.level,

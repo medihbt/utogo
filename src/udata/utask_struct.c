@@ -12,7 +12,7 @@ int get_item_order(TaskNode *L, int tid, TaskNode **prev_item)
     TaskNode *ptr = NULL;
     int ret = 0;
 
-    while ((L != NULL) && L->task.t_id != tid /*strcmp(L->task.t_id, tid)*/)
+    while ((L != NULL) && L->task.t_id != tid)
     {
         ptr = L;
         L = L->next;
