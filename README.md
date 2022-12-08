@@ -17,7 +17,7 @@
 然后, 在你觉得可以的文件夹下打开终端, 克隆这个项目 *(没有`git`的同学在[这里](https://git-scm.com/download/win)下载)* :
 
 ```bash
-git clone https://github.com/medihbt/utogo.git
+git clone https://gitee.com/medihbt/utogo.git
 ```
 
 然后`cd utogo`到项目文件夹,开始工作~
