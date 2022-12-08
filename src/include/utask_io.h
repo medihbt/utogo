@@ -71,8 +71,32 @@ ParsedText parse_config_to_lines(char *fileName);
 
 /* 函数: 把拆出来的行链表组织成语义树
  * 参数: 行链表
- * 返回: 重组得到的语义树，NULL或最高4位十六进制为F则表示出错*/
-ParsedText generate_data_tree(ParsedText *parsed_text);
+ * 返回: 重组得到的语义树指针，NULL或最高4位十六进制为F则表示出错*/
+ParsedText *generate_data_tree(ParsedText *parsed_text);
+
+/* 函数: 改变当前的节点名称为第node_order + 1个node_name.用法类似于cd命令.
+ * 参数: 重组得到的语义树指针, 要切换的节点的名称, 同名节点的顺序
+ *       [注] 1. 返回上一级节点请使用"#.."而非"..",因为可能会有叫作".."的节点.
+ *            2. 类似的, 返回头节点请使用"#/"或者"#HEAD".
+ *            3. 第一个节点的node_order为0, 以此类推.
+ * 返回: 成功则返回找到的节点指针, 失败则返回NULL. */
+ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order);
+
+/*以下函数未完成*/
+/* 函数: 读取整理好的文本树, 转化为Tasklist链表
+ * 参数: 构造好的语义树指针
+ * 返回: 构造好的TaskList */
+TaskList data_tree_to_tasklist(ParsedText *data_tree);
+
+/* 函数: 销毁语义树
+ * 参数: 指向语义树的指针
+ * 返回: bool成功或失败 */
+bool destory_data_tree(ParsedText *data_tree);
+
+/* 函数: 根据结构体内容写回文本文件
+ * 参数: 任务清单结构体
+ * 返回: int 0表示成功, -1表示失败*/
+int write_tasklist(TaskList tasklist);
 
 #ifdef __cplusplus
 }

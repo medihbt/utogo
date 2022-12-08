@@ -1,6 +1,6 @@
 #include "../include/utask_io.h"
 
-#define UTASK_IO_DEBUG_C 0
+#define UTASK_IO_DEBUG_C 1
 #define UTASK_MEM_BLOCK_SIZE 1024
 
 char *get_name_from_buffer(char *dest, /*const*/ char *buff)
@@ -92,13 +92,11 @@ ParsedText parse_config_to_lines(char *fileName)
         current->next = (ParsedNode *)malloc(sizeof(ParsedNode));
         *(current->next) = tmp_node;
 
-        // int value_length = get_value_from_buffer(&ptmp, ptmp);
-        char *value_begin = NULL;
-        int value_length = get_value_from_buffer(&value_begin, ptmp);
+        int value_length = get_value_from_buffer(&ptmp, ptmp);
         if (value_length != 0)
         {
             current->next->line.value = (char *)malloc(sizeof(char) * UTASK_MEM_BLOCK_SIZE);
-            memcpy(current->next->line.value, value_begin, value_length);
+            memcpy(current->next->line.value, ptmp, value_length);
             current->next->line.value[value_length + 1] = 0x0;
         }
         current = current->next;
@@ -108,16 +106,77 @@ ParsedText parse_config_to_lines(char *fileName)
     return parsed_text;
 }
 
+#define GetFirstInChilds(parsed_node) ((parsed_node)->parent->child)
+
+ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order)
+{
+    if (parsed_text == NULL || node_name == NULL || node_order < 0)
+        return NULL;
+    else if (parsed_text->head == NULL || parsed_text->head->child == NULL)
+        return NULL;
+    else if (parsed_text->now == NULL)
+        return NULL;
+
+    char *current_name = parsed_text->now->line.name;
+    int order_count = 0;
+    if (!strcmp(node_name, "#.."))
+    {
+        if (parsed_text->now->parent == NULL)
+            return NULL;
+        else
+            parsed_text->now = parsed_text->now->parent;
+    }
+    else if (!strcmp(node_name, "#/") || !strcmp(node_name, "#HEAD"))
+    {
+        parsed_text->now = parsed_text->head;
+    }
+    else
+    {
+        ParsedNode *ptr = GetFirstInChilds(parsed_text->now);
+        int ptr_level = ptr->line.level;
+        while ((ptr->line.level == ptr_level) && (order_count <= node_order))
+        {
+            if (!strcmp(ptr->line.name, node_name))
+                order_count++;
+            ptr = ptr->next;
+        }
+        if (ptr->line.level != ptr_level)
+            return NULL;
+    }
+    return parsed_text->now;
+}
+
 #if UTASK_IO_DEBUG_C == 1
 /* 函数: 测试使用的主程序 */
-int main()
+int main(int argc, char *argv[])
 {
+    if (argc < 2)
+    {
+        puts("测试主函数 用法: ");
+        printf("%s [文件名]\n\n", argv[0]);
+        return 0;
+    }
     ParsedText parsed_text = parse_config_to_lines("../../bootstrap/debug_examples/main.scene.txt");
+    puts("\033[01mParsing成功! 以下是行数据: \033[0m");
     for (ParsedNode *ptr = parsed_text.head; ptr->next != NULL; ptr = ptr->next)
-        printf("%d|%s=%s\n",
+        printf("\033[01m%4d\033[0m \033[01;32m%s\033[0m = %s\n",
                ptr->line.level,
                ptr->line.name,
                ptr->line.value);
+    
+    generate_data_tree(&parsed_text);
+
+    ParsedNode *node = change_current_node(&parsed_text, "#/", 0);
+    if (node == NULL)
+        puts("ERROR: Node not found");
+    else
+    {
+        puts("\033[01mFinding成功! 以下是节点数据: \033[0m");
+        printf("\033[01m%4d\033[0m \033[01;32m%s\033[0m = %s\n",
+               node->line.level,
+               node->line.name,
+               node->line.value);
+    }
 
     return 0;
 }

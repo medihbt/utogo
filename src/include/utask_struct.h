@@ -19,6 +19,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 
 enum UTask_Type {
     _STATIC = 0,
@@ -48,11 +49,28 @@ typedef struct
     void *priv_data;    // 私有数据, 根据ttype决定类型
 } TaskInfo;
 
+/* 任务链表节点 */
 typedef struct node
 {
     TaskInfo task;
     struct node *next;
 } TaskNode;
+
+/* 任务链表特征结构体 */
+typedef struct __tasklist_f
+{
+    uint64_t l_id;
+    char name[256];
+    char description[1024];
+    uint64_t max_task_id;
+    uint32_t default_order;
+
+    TaskNode *head;
+    TaskNode *now;
+    uint64_t length;
+} TaskList;
+
+/* 任务链表 */
 
 /* 函数: 按任务对象在链表中的位置寻找对象, 可以理解为复杂度为O(n)
  * 版的tasknode[index]数组索引.
