@@ -1,0 +1,43 @@
+# aaa
+#  :
+# bbb
+list:
+	l_id: "1" # List ID. 每一条数据采用<属性名称: "属性值">的方式展现
+	name: "主场景" # 字符串用双引号包裹
+	description: "记录我的日常事件"
+	task: # 数组: 用相同名字的一组节点表示
+		t_id: "1"
+		type: "static"
+		name: "任务1"
+		description: "测试任务1"
+		t_duedate_type: "onetime"
+		t_duedate: "2022-12-07"
+		t_duetime: "08:30:00"
+		time_ahead: "01:00:00"
+		private:
+			NULL:
+	task:
+		t_id: "2"
+		type: "time_count"
+		name: "任务2"
+		description: "测试任务2"
+		t_duedate_type: "everyday"
+		t_duedate: "2022-12-06"
+		t_duetime: "12:00:00"
+		tine_ahead: "00:00:00"
+		private:
+			timespan: "02:00:00"
+	task:
+		t_id: "3"
+		type: "bigevent"
+		name: "任务3"
+		description: "测试任务3"
+		t_duedate_type: "putoff"
+		t_duedate: "2022-12-06"
+		t_duetime: "08:00:00"
+		tine_ahead: "00:00:00"
+		private:
+			subtask:
+				date: "2022-12-06"
+				time: "17:00:00"
+				name: "SubTask 1"
