@@ -27,28 +27,26 @@ git clone https://gitee.com/medihbt/utogo.git
 - 纯命令行向:
   
   1. 如果新建了文件,需要`git add <相对路径>/<你的文件>`(太懒的话`cd`到项目根目录,然后`git add ./*`);
-    
+  
   2. 提交前记得pull:`git pull`获取最新变更;
-    
+  
   3. 然后执行`git commit`,把你的修改提交到本地仓库;
-    
+  
   4. 最后`git push`到GitHub仓库上.用户名为`git`,**密码就是你创建的令牌(token)!**
-    
+
 - 编辑器集成向
   
   大多数像VS Code, Visual Studio, QtCreator这样的编辑器/IDE集成了`git`,然而我还没摸熟它们的用法.
-  
 
 ## 项目文件夹及作用(待补充)
 
 - `docs`: 项目文档文件夹,存放项目说明及技术信息
-  
+
 - `bootstrap`: 初始化文件夹,用于存放临时代码及实验代码
-  
+
 - `src`: 项目的正式代码
-  
+
 - `build`: 编译生成的文件存放于此, 一般情况下生成的文件不能上传到GitHub
-  
 
 ## 开发流程:
 
