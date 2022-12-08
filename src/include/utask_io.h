@@ -69,6 +69,11 @@ static inline int get_str_level(char *str)
  * 返回: 拆分好的链表*/
 ParsedText parse_config_to_lines(char *fileName);
 
+/* 函数: 把拆出来的行链表组织成语义树
+ * 参数: 行链表
+ * 返回: 重组得到的语义树，NULL或最高4位十六进制为F则表示出错*/
+ParsedText generate_data_tree(ParsedText *parsed_text);
+
 #ifdef __cplusplus
 }
 #endif
