@@ -22,16 +22,20 @@ extern "C" {
 #include <stdint.h>
 
 enum UTask_Type {
-    _STATIC = 0,
-    _TIME_LIMIT, // 1
-    _BIG_EVENT,  // 2
+    _STATIC = 0,    // 默认类型, 一次性的任务
+    _TIME_LIMIT,    // 限时任务, 类似于考试
+    _BIG_EVENT,     // 重大事件, 包含了一个小清单
 };
 
 enum UTask_DueDate_Type {
-    _ONCE = 0,
-    _TWICE,             // 1
-    _EVERYDAY,          // 2
-    _CIRCULATE_WEEKLY = 0x80000000, // 最高位取1时表示每周循环
+    _ONCE = 0x0,          // 一次
+    _TWICE,             // 1 连续两次
+    _EVERYDAY,          // 2 每天
+    _CIRCULATE_WEEKLY = 0x80000000, // 最高位取1时表示每周循环, 最低7位表示一周7天
+};
+
+enum UTask_Sort_Order {
+    _TIME = 0,   // 按时间排序
 };
 
 /* 对象: 任务信息 */
@@ -59,15 +63,16 @@ typedef struct node
 /* 任务链表特征结构体 */
 typedef struct __tasklist_f
 {
-    uint64_t l_id;
-    char name[256];
-    char description[1024];
-    uint64_t max_task_id;
-    uint32_t default_order;
+    uint64_t l_id;          // 清单id
+    char name[256];         // 清单名称
+    char description[1024]; // 任务描述
+    uint64_t max_task_id;   // 所有任务id的最大值
+    uint32_t default_order; // 默认排序方式, 取值参见enum UTask_Sort_Order
 
-    TaskNode *head;
-    TaskNode *now;
-    uint64_t length;
+    /*task条目*/
+    TaskNode *head;         // 任务头节点
+    TaskNode *now;          // 默认状况下的当前节点
+    uint64_t length;        // 清单长度
 } TaskList;
 
 /* 任务链表 */

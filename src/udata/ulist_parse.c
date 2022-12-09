@@ -1,6 +1,6 @@
 #include "../include/utask_io.h"
 
-#define UTASK_IO_DEBUG_C 1
+#define UTASK_IO_DEBUG_C 0
 #define UTASK_MEM_BLOCK_SIZE 1024
 
 char *get_name_from_buffer(char *dest, /*const*/ char *buff)
@@ -106,8 +106,6 @@ ParsedText parse_config_to_lines(char *fileName)
     return parsed_text;
 }
 
-#define GetFirstInChilds(parsed_node) ((parsed_node)->parent->child)
-
 ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order)
 {
     if (parsed_text == NULL || node_name == NULL || node_order < 0)
@@ -132,8 +130,12 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
     }
     else
     {
-        ParsedNode *ptr = GetFirstInChilds(parsed_text->now);
+        if (parsed_text->now->child == NULL)
+            return NULL;
+
+        ParsedNode *ptr = parsed_text->now;
         int ptr_level = ptr->line.level;
+
         while ((ptr->line.level == ptr_level) && (order_count <= node_order))
         {
             if (!strcmp(ptr->line.name, node_name))
@@ -144,6 +146,79 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
             return NULL;
     }
     return parsed_text->now;
+}
+
+TaskList data_tree_to_tasklist(ParsedText *data_tree)
+{
+    TaskList tasklist = {
+        .head = (TaskNode *)malloc(sizeof(TaskNode)),
+        .description = (char *)malloc(MAX_DESCRIPTION_SIZE * sizeof(char)),
+        .now = tasklist.head,
+        .length = 0,
+        .default_order = 0,
+    };
+    ParsedNode *node_guide = change_current_node(data_tree, "#/", 0);
+    int tasks_count = 0;
+    if (node_guide == NULL)
+        return tasklist;
+
+    /* 初始化元数据 */
+    *(tasklist.head) = (TaskNode){
+        .task = (TaskInfo){
+            .name = {0},
+            .desciption = NULL,
+            .priv_data = NULL,
+        },
+    };
+
+    /* 通过遍历树节点给tasklist的属性赋值 */
+    // tasklist
+    if (node_guide = change_current_node(data_tree, "list", 0) == NULL)
+    {
+        tasklist = (TaskList){
+            .l_id = 0,
+            .max_task_id = 0,
+            .length = 0,
+        };
+        memcpy(tasklist.name, "Untitled List", 14);
+        return tasklist;
+    }
+
+    // [tasklist.l_id]  int(文件) -> int(结构体)
+    if ((node_guide = change_current_node(data_tree, "l_id", 0) == NULL) || (node_guide->line.value == NULL))
+        tasklist.l_id = 0;
+    else
+        sscanf(node_guide->line.value, "%d", &tasklist.l_id);
+    node_guide = change_current_node(data_tree, "#..", 0);  // 返回上一级节点
+    // [tasklist.name]  string -> char[256]
+    if ((node_guide = change_current_node(data_tree, "name", 0) == NULL) || (node_guide->line.value == NULL))
+        memcpy(tasklist.name, "Untitled", 9);
+    else
+        strncpy(tasklist.name, node_guide->line.name, 256);
+    node_guide = change_current_node(data_tree, "#..", 0);
+    // [tasklist.description]   string -> char[1024]
+    if ((node_guide = change_current_node(data_tree, "description", 0) == NULL) || (node_guide->line.value == NULL))
+        memcpy(tasklist.description, "\0\0\0", 4);
+    else
+        strncpy(tasklist.description, node_guide->line.value, 1024);
+    node_guide = change_current_node(data_tree, "#..", 0);
+    // [tasklist.default_order] string -> int
+    if ((node_guide = change_current_node(data_tree, "default_order", 0) == NULL) || (node_guide->line.value == NULL))
+        tasklist.default_order = _TIME;
+    else if (!strcmp(node_guide->line.value, "time"))
+        tasklist.default_order = _TIME;
+    else
+        tasklist.default_order = 0x0;
+    node_guide = change_current_node(data_tree, "#..", 0);
+    // [tasklist.task]  (子链表) array -> TaskNode *heads
+    // /*查看是否有task节点*/
+    if (change_current_node(data_tree, "task", 0) == NULL)
+        return tasklist;
+    // /*else*/
+    // [tasklist.task[tasks_count]]
+    
+
+    return tasklist;
 }
 
 #if UTASK_IO_DEBUG_C == 1
@@ -163,7 +238,7 @@ int main(int argc, char *argv[])
                ptr->line.level,
                ptr->line.name,
                ptr->line.value);
-    
+
     generate_data_tree(&parsed_text);
 
     ParsedNode *node = change_current_node(&parsed_text, "#/", 0);

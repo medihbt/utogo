@@ -10,6 +10,7 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 
+#define MAX_DESCRIPTION_SIZE 3072
 
 /*对象: 文本每一行的抽象形式，既可以组成链表，又可以组成树结构*/
 /*每一行的单元*/
@@ -41,6 +42,9 @@ typedef struct
 
 
 /* 一些杂项内联函数与宏定义函数 */
+
+/* 宏: 找到节点树的同级第一个节点 */
+#define GetFirstInChilds(parsed_node) ((parsed_node)->parent->child)
 
 /*内联函数: 打印n个tab字符
  *          (编译时插入调用者，写在头文件里)
@@ -79,6 +83,7 @@ ParsedText *generate_data_tree(ParsedText *parsed_text);
  *       [注] 1. 返回上一级节点请使用"#.."而非"..",因为可能会有叫作".."的节点.
  *            2. 类似的, 返回头节点请使用"#/"或者"#HEAD".
  *            3. 第一个节点的node_order为0, 以此类推.
+ *            4. 调用一次该函数不能连续切换多次节点, 即没有与命令"cd ../a/b/c"等价的操作
  * 返回: 成功则返回找到的节点指针, 失败则返回NULL. */
 ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order);
 
