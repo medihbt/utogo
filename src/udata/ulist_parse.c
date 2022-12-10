@@ -1,6 +1,9 @@
 #include "../include/utask_io.h"
 
-#define UTASK_IO_DEBUG_C 0
+/*DEBUG用的宏*/
+#define UTASK_IO_DEBUG_C 1
+#define UTASK_CONVERT 1
+
 #define UTASK_MEM_BLOCK_SIZE 1024
 
 char *get_name_from_buffer(char *dest, /*const*/ char *buff)
@@ -34,7 +37,7 @@ int get_value_from_buffer(char **p_begin_out, /*const */ char *buff)
     {
         if (*buff == '\n')
         {
-            *p_begin_out == NULL;
+            *p_begin_out = NULL;
             return 0;
         }
         buff++;
@@ -106,6 +109,69 @@ ParsedText parse_config_to_lines(char *fileName)
     return parsed_text;
 }
 
+ParsedText *generate_data_tree(ParsedText *parsed_text)
+{
+    if (parsed_text == NULL)
+        return NULL;
+
+    /*令头节点的子节点指针指向下一节点，next指针指空，令下一级的父节点为HEAD*/
+    ParsedNode *parsed_head = parsed_text->head;
+    parsed_head->child = parsed_head->next;
+    parsed_head->next = NULL;
+    parsed_head->child->parent = parsed_head;
+
+    /*创建指针栈*/
+    ParsedNode *content[16] = {parsed_head, NULL};
+    ParsedNode **base = content + 1, **top = content + 1;
+
+    /*对数据块进行操作*/
+    ParsedNode *ptr_op = parsed_head->child, *ptr_prev = parsed_head;
+    *top = ptr_op;
+    while (ptr_op != NULL)
+    {
+        top = base + ptr_op->line.level;
+        if (ptr_op->line.level > (ptr_prev->line.level + 1)) // 测试
+        {
+            fprintf(stderr, "ERROR reported by function %s: Syntax error caused by too many indents of the file\n", __func__);
+            return NULL;
+        }
+
+        ParsedNode *ptmp = NULL;
+        switch ((ptr_op->line.level) - (ptr_prev->line.level))
+        {
+        case 1:
+            ptr_op->parent = ptr_prev;
+            ptr_prev->child = ptr_op;
+            ptr_prev->next = ptr_op->next;
+            /*以上建立父子关系*/
+            ptmp = ptr_prev;
+            break;
+        case 0:
+            ptr_op->parent = ptr_prev->parent;
+            ptr_prev->parent->next = ptr_op->next;
+            /*以上建立父子关系*/
+            ptmp = ptr_prev->parent;
+            break;
+        default: // case <= -1
+            ptmp = ptr_prev;
+            for (int i = 0; i < (ptr_prev->line.level) - (ptr_op->line.level); i++)
+                ptmp = ptmp->parent;
+
+            ptr_op->parent = base[ptr_op->line.level]->parent;
+            break;
+        }
+        while (ptmp != parsed_head)
+        {
+            ptmp->next = ptr_op->next;
+            ptmp = ptmp->parent;
+        }
+        *top = ptr_op;
+        ptr_prev = ptr_op;
+        ptr_op = ptr_op->next;
+    }
+    return parsed_text;
+}
+
 ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order)
 {
     if (parsed_text == NULL || node_name == NULL || node_order < 0)
@@ -114,46 +180,50 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
         return NULL;
     else if (parsed_text->now == NULL)
         return NULL;
+    
+    ParsedNode *ptext_now_dump = parsed_text->now;
 
-    char *current_name = parsed_text->now->line.name;
-    int order_count = 0;
-    if (!strcmp(node_name, "#.."))
+    if (!strcmp(node_name, "#.."))  // "#.."返回父节点，灵感来源于上一级文件夹(名称为"..")
     {
         if (parsed_text->now->parent == NULL)
             return NULL;
         else
             parsed_text->now = parsed_text->now->parent;
     }
-    else if (!strcmp(node_name, "#/") || !strcmp(node_name, "#HEAD"))
+    else if (!strcmp(node_name, "#/") || !strcmp(node_name, "#HEAD")) // "#/"或"#HEAD"返回头节点
     {
         parsed_text->now = parsed_text->head;
     }
-    else
+    else // 找寻名称为node_name的子节点
     {
         if (parsed_text->now->child == NULL)
             return NULL;
 
-        ParsedNode *ptr = parsed_text->now;
+        ParsedNode *ptr = parsed_text->now->child;
         int ptr_level = ptr->line.level;
 
-        while ((ptr->line.level == ptr_level) && (order_count <= node_order))
+        int order_count = 0;
+        while ((ptr != NULL) && (ptr->line.level == ptr_level) && (order_count <= node_order))
         {
             if (!strcmp(ptr->line.name, node_name))
+            {
                 order_count++;
+                parsed_text->now = ptr;
+            }
             ptr = ptr->next;
         }
-        if (ptr->line.level != ptr_level)
+        if ((parsed_text->now == ptext_now_dump) || (order_count <= node_order))
             return NULL;
     }
     return parsed_text->now;
 }
 
+#if UTASK_CONVERT == 1
 TaskList data_tree_to_tasklist(ParsedText *data_tree)
 {
     /*初始化返回节点*/
     TaskList tasklist = {
         .head = (TaskNode *)malloc(sizeof(TaskNode)),
-        .description = (char *)malloc(MAX_DESCRIPTION_SIZE * sizeof(char)),
         .now = tasklist.head,
         .length = 0,
         .max_task_id = 0,
@@ -174,7 +244,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
 
     /* 通过遍历树节点给tasklist的属性赋值 */
     // tasklist
-    if (node_guide = change_current_node(data_tree, "list", 0) == NULL)
+    if ((node_guide = change_current_node(data_tree, "list", 0)) == NULL)
     {
         tasklist = (TaskList){
             .l_id = 0,
@@ -186,25 +256,25 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
     }
 
     // [tasklist.l_id]  int(文件) -> int(结构体)
-    if ((node_guide = change_current_node(data_tree, "l_id", 0) == NULL) || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "l_id", 0)) == NULL || (node_guide->line.value == NULL))
         tasklist.l_id = 0;
     else
         sscanf(node_guide->line.value, "%ld", &tasklist.l_id);
     node_guide = change_current_node(data_tree, "#..", 0); // 返回上一级节点
     // [tasklist.name]  string -> char[256]
-    if ((node_guide = change_current_node(data_tree, "name", 0) == NULL) || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "name", 0)) == NULL || (node_guide->line.value == NULL))
         memcpy(tasklist.name, "Untitled", 9);
     else
         strncpy(tasklist.name, node_guide->line.name, 256);
     node_guide = change_current_node(data_tree, "#..", 0);
     // [tasklist.description]   string -> char[1024]
-    if ((node_guide = change_current_node(data_tree, "description", 0) == NULL) || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "description", 0)) == NULL || (node_guide->line.value == NULL))
         memcpy(tasklist.description, "\0\0\0", 4);
     else
         strncpy(tasklist.description, node_guide->line.value, 1024);
     node_guide = change_current_node(data_tree, "#..", 0);
     // [tasklist.default_order] string -> int
-    if ((node_guide = change_current_node(data_tree, "default_order", 0) == NULL) || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "default_order", 0)) == NULL || (node_guide->line.value == NULL))
         tasklist.default_order = _TIME;
     else if (!strcmp(node_guide->line.value, "time"))
         tasklist.default_order = _TIME;
@@ -231,14 +301,14 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
         };
 
         // tasklist.task[tasks_count].t_id      int -> int
-        if ((node_guide = change_current_node(data_tree, "t_id", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "t_id", 0)) == NULL || (node_guide->line.value == NULL))
             tasklist.now->next->task.t_id = -1;
         else if (sscanf(node_guide->line.value, "%d", &tasklist.now->next->task.t_id) < 1)
             tasklist.now->next->task.t_id = -1;
         tasklist.max_task_id = tasklist.max_task_id > tasklist.now->next->task.t_id ? tasklist.max_task_id : tasklist.now->next->task.t_id;
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].finished  string -> int
-        if ((node_guide = change_current_node(data_tree, "finished", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "finished", 0)) == NULL || (node_guide->line.value == NULL))
             tasklist.now->next->task.finished = false;
         else if ((!strncmp(node_guide->line.value, "yes", 3)) || (!strncmp(node_guide->line.value, "YES", 3)))
             tasklist.now->next->task.finished = true;
@@ -246,7 +316,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             tasklist.now->next->task.finished = false;
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].type      string -> int
-        if ((node_guide = change_current_node(data_tree, "type", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "type", 0)) == NULL || (node_guide->line.value == NULL))
             tasklist.now->next->task.ttype = _STATIC;
         else if (!strncmp(node_guide->line.value, "static", 6)) // 普通任务
             tasklist.now->next->task.ttype = _STATIC;
@@ -256,19 +326,19 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             tasklist.now->next->task.ttype = _BIG_EVENT;
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].name      string -> char[256]
-        if ((node_guide = change_current_node(data_tree, "name", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "name", 0)) == NULL || (node_guide->line.value == NULL))
             memcpy(tasklist.now->next->task.name, "Untitled", 9);
         else
             strncpy(tasklist.now->next->task.name, node_guide->line.value, 256);
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].description       string -> char *
-        if ((node_guide = change_current_node(data_tree, "description", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "description", 0)) == NULL || (node_guide->line.value == NULL))
             tasklist.now->next->task.desciption[0] = 0x0;
         else
             strncpy(tasklist.now->next->task.desciption, node_guide->line.value, MAX_DESCRIPTION_SIZE);
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].t_duedate_type
-        if ((node_guide = change_current_node(data_tree, "t_duedate_type", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "t_duedate_type", 0)) == NULL || (node_guide->line.value == NULL))
             tasklist.now->next->task.t_duedate_type = _ONCE;
         else if (!strncmp(node_guide->line.value, "once", 4)) // 一次
             tasklist.now->next->task.t_duedate_type = _ONCE;
@@ -283,7 +353,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
         }
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].t_duedate
-        if ((node_guide = change_current_node(data_tree, "t_duedate", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "t_duedate", 0)) == NULL || (node_guide->line.value == NULL))
         {
             tasklist.now->next->task.t_duedate[0] = 2000;
             tasklist.now->next->task.t_duedate[1] = 1;
@@ -296,7 +366,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                    tasklist.now->next->task.t_duedate + 2);
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].t_duetime
-        if ((node_guide = change_current_node(data_tree, "t_duetime", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "t_duetime", 0)) == NULL || (node_guide->line.value == NULL))
         {
             tasklist.now->next->task.t_duetime[0] = 0;
             tasklist.now->next->task.t_duetime[1] = 0;
@@ -309,7 +379,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                    tasklist.now->next->task.t_duetime);
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].time_ahead
-        if ((node_guide = change_current_node(data_tree, "time_ahead", 0) == NULL) || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "time_ahead", 0)) == NULL || (node_guide->line.value == NULL))
         {
             tasklist.now->next->task.time_ahead[0] = 0;
             tasklist.now->next->task.time_ahead[1] = 0;
@@ -322,21 +392,21 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                    tasklist.now->next->task.time_ahead);
         change_current_node(data_tree, "#..", 0);
         // tasklist.task[tasks_count].private
-        if (node_guide = change_current_node(data_tree, "private", 0) == NULL)
+        if ((node_guide = change_current_node(data_tree, "private", 0)) == NULL)
             switch (tasklist.now->next->task.ttype)
             {
             case _TIME_LIMIT:
                 tasklist.now->next->task.priv_data = (int *)malloc(sizeof(int) * 3);
-                if (node_guide = change_current_node(data_tree, "timespan", 0) == NULL || node_guide->line.value == NULL)
+                if ((node_guide = change_current_node(data_tree, "timespan", 0)) == NULL || node_guide->line.value == NULL)
                 {
                     ((int *)tasklist.now->next->task.priv_data)[0] = 0;
                     ((int *)tasklist.now->next->task.priv_data)[1] = 0;
                     ((int *)tasklist.now->next->task.priv_data)[2] = 0;
                 }
                 break;
-            // case _BIG_EVENT:
-            //     tasklist.now->next->task.priv_data = (TaskNode *)malloc(sizeof(TaskNode)); // 启动子列表
-            //     break;
+                // case _BIG_EVENT:
+                //     tasklist.now->next->task.priv_data = (TaskNode *)malloc(sizeof(TaskNode)); // 启动子列表
+                //     break;
 
             default:
                 break;
@@ -348,17 +418,18 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
 
     return tasklist;
 }
+#endif
 
 #if UTASK_IO_DEBUG_C == 1
 /* 函数: 测试使用的主程序 */
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
-    {
-        puts("测试主函数 用法: ");
-        printf("%s [文件名]\n\n", argv[0]);
-        return 0;
-    }
+    // if (argc < 2)
+    // {
+    //     puts("测试主函数 用法: ");
+    //     printf("%s [文件名]\n\n", argv[0]);
+    //     return 0;
+    // }
     ParsedText parsed_text = parse_config_to_lines("../../bootstrap/debug_examples/main.scene.txt");
     puts("\033[01mParsing成功! 以下是行数据: \033[0m");
     for (ParsedNode *ptr = parsed_text.head; ptr->next != NULL; ptr = ptr->next)
@@ -370,6 +441,10 @@ int main(int argc, char *argv[])
     generate_data_tree(&parsed_text);
 
     ParsedNode *node = change_current_node(&parsed_text, "#/", 0);
+    node = change_current_node(&parsed_text, "list", 0);
+    node = change_current_node(&parsed_text, "task", 0);
+    node = change_current_node(&parsed_text, "t_id", 0);
+    node = change_current_node(&parsed_text, "#..", 0);
     if (node == NULL)
         puts("ERROR: Node not found");
     else

@@ -17,8 +17,8 @@ list:
 		t_duetime: "08:30:00"
 		time_ahead: "01:00:00"
 		private:
-			NULL:
-	task: "2"
+			NULL: # ptr_prev
+	task: "2" #     ptr_op
 		t_id: "2"
 		finished: "no"
 		type: "time_count"
