@@ -28,9 +28,9 @@ enum UTask_Type {
 };
 
 enum UTask_DueDate_Type {
-    _ONCE = 0x0,          // 一次
-    _TWICE,             // 1 连续两次
-    _EVERYDAY,          // 2 每天
+    _ONCE     = 0x0,        // 一次
+    // _TWICE,              // 1 连续两次
+    _EVERYDAY = 0x2,        // 2 每天
     _CIRCULATE_WEEKLY = 0x80000000, // 最高位取1时表示每周循环, 最低7位表示一周7天
 };
 
@@ -66,7 +66,7 @@ typedef struct __tasklist_f
     uint64_t l_id;          // 清单id
     char name[256];         // 清单名称
     char description[1024]; // 任务描述
-    uint64_t max_task_id;   // 所有任务id的最大值
+    int64_t  max_task_id;   // 所有任务id的最大值
     uint32_t default_order; // 默认排序方式, 取值参见enum UTask_Sort_Order
 
     /*task条目*/
