@@ -44,118 +44,118 @@ TaskNode *goto_item(TaskNode *L, int index)
 
 bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice) // 插入//1头插，0尾插，choice为newnode为第i个节点
 {
-    TaskNode *next, *newnode;
-    int i = 2, u = 1;
+     TaskNode *next,*newnode;
+    int i=2,u=1;
     newnode = (TaskNode *)malloc(sizeof(TaskNode));
-    if (newnode == NULL)
-        return false;
-    newnode->task = tinfo;
-    newnode->next = NULL;
-    next = L->next;
-    // 头插法
-    if (choice == 1)
+    if(newnode == NULL)     return false;
+    newnode -> task = tinfo;
+    newnode -> next = NULL;
+    next = L -> next;
+    //头插法
+    if(choice == 1)
     {
         L->next = newnode;
-        newnode->next = next;
-        newnode->task.t_id = u;
-        while (next != NULL)
+        newnode -> next = next;
+        //newnode->task.t_id = u;
+        while(next != NULL)
         {
-            next->task.t_id = u + 1;
-            next = next->next;
+            //next->task.t_id = u+1;
+            next = next -> next;
             u++;
+            
         }
-    }
-    else if (choice == 0) // 尾插法
-    {
-        if (next == NULL)
+    }else
+    //尾插法
+    if(choice == 0)
+    {   if(next == NULL)
         {
-            L->next = newnode;
-            newnode->task.t_id = 1;
+            L -> next = newnode;
+            //newnode->task.t_id = 1;
         }
         else
         {
-            while (next->next != NULL)
-            {
-                next = next->next;
-            }
-            next->next = newnode;
-            newnode->task.t_id = next->task.t_id + 1;
+        while(next -> next != NULL)
+        {
+            next = next -> next;
         }
-    }
-    else
-    // 任意插
+        next -> next= newnode;
+        //newnode->task.t_id = next ->task.t_id + 1;
+        }
+      
+    }else
+    //任意插
     {
-        if (next == NULL)
+    if(next == NULL)
+    {
+        return false;
+    }
+    while(next != NULL)
+    {
+    if(choice == i)
+    {
+        newnode->next = next->next;
+        next -> next = newnode;
+        //newnode->task.t_id = next ->task.t_id+1;
+        //u = newnode->task.t_id+1;
+        next = newnode -> next;
+        while(next != NULL)
+        {
+           // next->task.t_id = u;
+            //u++;
+            next = next -> next ;
+        } 
+        break;
+        
+    }else
+    {
+        i++;
+        next = next -> next;
+        if(next == NULL)
         {
             return false;
         }
-        while (next != NULL)
-        {
-            if (choice == i)
-            {
-                newnode->next = next->next;
-                next->next = newnode;
-                newnode->task.t_id = next->task.t_id + 1;
-                u = newnode->task.t_id + 1;
-                next = newnode->next;
-                while (next != NULL)
-                {
-                    next->task.t_id = u;
-                    u++;
-                    next = next->next;
-                }
-                break;
-            }
-            else
-            {
-                i++;
-                next = next->next;
-                if (next == NULL)
-                {
-                    return false;
-                }
-            }
-        }
+    }
+
+    }
     }
     return true;
+   
 }
 
 bool utask_delet_one_node(TaskNode *L, char id) // 删除一个节点
 {
-    TaskNode *cur, *front;
+    TaskNode *cur,*front;
     int u;
     front = L;
-    cur = L->next;
+    cur = L -> next;
     L->task.t_id = 0;
-    if (id <= 0)
+    if(id <= 0)
     {
         return false;
     }
-    while (cur->task.t_id != id)
-    {
-        front = front->next;
-        cur = cur->next;
+    while(cur -> task.t_id != id)
+    {   front = front -> next;
+        cur = cur -> next;
         if (cur == NULL)
         {
             return false;
         }
     }
-    if (cur->next == NULL)
+    if(cur -> next == NULL)
     {
-        front->next = NULL;
+        front -> next = NULL;
         free(cur);
-    }
-    else
+    }else
     {
-        front->next = cur->next;
+        front -> next = cur -> next;
         free(cur);
-        u = front->task.t_id + 1;
-        while (front->next != NULL)
-        {
-            front = front->next;
-            front->task.t_id = u;
+       // u = front->task.t_id + 1;
+         while(front -> next != NULL)
+         {
+            front = front -> next;
+         //   front->task.t_id=u;
             u++;
-        }
+         }
     }
     return true;
 }
