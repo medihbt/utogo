@@ -3,8 +3,8 @@
 #include "../include/utask_io.h"
 
 /*DEBUG用的宏*/
-#define UTASK_IO_DEBUG_C 1
-#define UTASK_IO_DEBUG_OUTPUT 1
+#define UTASK_IO_DEBUG_C 0
+#define UTASK_IO_DEBUG_OUTPUT 0
 #define UTASK_CONVERT 1
 
 #define UTASK_MEM_BLOCK_SIZE 1024

@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-// #include "cross_platform.h"
+#include "utask_timer.h"
 #include "utask_struct.h"
 #include <stdlib.h>
 #include <string.h>
@@ -66,6 +66,19 @@ static inline int get_str_level(char *str)
     return tmp - str;
 }
 
+/*字符串操作函数*/
+
+/*函数: 将配置文件里的字符串转义成正常字符串. 转义标准见文档.
+ *参数: 目标字符串, 源字符串, 最大长度
+ *返回: 转义后字符串的大小, 返回-1则表示失败*/
+uint64_t convert_string_from_file(char *dest, const char *src, uint64_t len);
+
+/*函数: 将任务清单的字符串转义成配置文件里的字符串.
+ *参数: 目标字符串, 源字符串, 最大长度
+ *返回: 转义后字符串的大小, 返回-1则表示失败*/
+uint64_t convert_string_from_tasklist(char *dest, const char *src, uint64_t len);
+
+
 /* 清单文件的操作函数 */
 
 /* 函数: 读入清单文件并拆成小行
@@ -92,7 +105,6 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
  * 返回: 构造好的TaskList */
 TaskList data_tree_to_tasklist(ParsedText *data_tree);
 
-/*以下函数未完成*/
 /* 函数: 销毁语义树
  * 参数: 指向语义树的指针
  * 返回: bool成功或失败 */
@@ -103,10 +115,11 @@ bool destory_data_tree(ParsedText *data_tree);
  *返回: 任务链表的特征结构体 */
 TaskList new_tasklist(char *list_file_name);
 
-/* 函数: 根据结构体内容写回文本文件
- * 参数: 任务清单结构体
+/*以下函数未完成*/
+/* 函数: 根据结构体内容写回文本文件. 如果原本的文件存在，则清空重写.
+ * 参数: 任务清单结构体, 要写入的文件
  * 返回: int 0表示成功, -1表示失败*/
-int write_tasklist(TaskList tasklist);
+int write_tasklist(TaskList *tasklist, const char *filename);
 
 #ifdef __cplusplus
 }
