@@ -9,6 +9,72 @@
 
 #define UTASK_MEM_BLOCK_SIZE 1024
 
+/*字符串转义与反转义*/
+
+int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len)
+{
+    if (dest == NULL || src == NULL)
+        return -1;
+
+    uint64_t conv_len = 0;
+    while (*src != '\0' && (conv_len < dest_len - 1))
+    {
+        if (*src == '\\')
+        {
+            src++;
+            switch (*src)
+            {
+            case 'n': *dest = '\n'; break;
+            case 't': *dest = '\t'; break;
+            case '\\': default: *dest = '\\';
+            }
+        }
+        else
+            *dest = *src;
+        src++, dest++, conv_len++;
+    }
+    *dest = '\0';
+    return conv_len;
+}
+
+int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest_len)
+{
+    if (dest == NULL || src == NULL)
+        return -1;
+    int64_t unconv_len = 0;
+    while (*src != '\0' && unconv_len < dest_len - 1)
+    {
+        switch (*src)
+        {
+        case '\\':
+            *(dest++) = '\\';
+            *dest = '\\';
+            unconv_len++;
+            break;
+        case '\t':
+            *(dest++) = '\\';
+            *dest = 't';
+            unconv_len++;
+            break;
+        case '\n':
+            *(dest++) = '\\';
+            *dest = 'n';
+            unconv_len++;
+            break;
+        default:
+            *dest = *src;
+            break;
+        }
+        dest++;
+        src++;
+        unconv_len++;
+    }
+    *dest = '\0';
+    return unconv_len;
+}
+
+/*配置文件解析: 第一阶段*/
+// 工具函数
 char *get_name_from_buffer(char *dest, /*const*/ char *buff)
 {
     char *cur = dest;
@@ -69,6 +135,7 @@ ParsedText parse_config_to_lines(char *fileName)
     ParsedNode *current = parsed_text.head;
     FILE *cfg_file = fopen(fileName, "r");
     char *buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
+    char *conv_buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
     int lines = 0;
 
     if (parsed_text.head == NULL || cfg_file == NULL)
@@ -101,9 +168,11 @@ ParsedText parse_config_to_lines(char *fileName)
         int value_length = get_value_from_buffer(&ptmp, ptmp);
         if (value_length != 0)
         {
-            current->next->line.value = (char *)malloc(sizeof(char) * UTASK_MEM_BLOCK_SIZE);
-            memcpy(current->next->line.value, ptmp, value_length);
-            current->next->line.value[value_length + 1] = 0x0;
+            current->next->line.value = (char *)malloc(sizeof(char) * MAX_DESCRIPTION_SIZE);
+            memcpy(conv_buffer, ptmp, value_length);
+            conv_buffer[value_length] = 0x0;
+            if (convert_string_from_file(current->next->line.value, conv_buffer, MAX_DESCRIPTION_SIZE) == -1)
+                return parsed_text;
         }
         current = current->next;
     }
@@ -112,6 +181,7 @@ ParsedText parse_config_to_lines(char *fileName)
     return parsed_text;
 }
 
+/*配置文件解析: 第二阶段*/
 ParsedText *generate_data_tree(ParsedText *parsed_text)
 {
     if (parsed_text == NULL)
@@ -169,6 +239,8 @@ ParsedText *generate_data_tree(ParsedText *parsed_text)
     return parsed_text;
 }
 
+/*配置文件解析: 第三阶段*/
+// 工具函数: 改变当前节点
 ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order)
 {
     if (parsed_text == NULL || node_name == NULL || node_order < 0)
@@ -464,6 +536,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             change_current_node(data_tree, "#..", 0);
         }
         // tasklist.task[tasks_count].private
+        // Medi注: 这种类似于多态的做法貌似不适于C++... C++会有更强大的解决方案吧。
         if ((node_guide = change_current_node(data_tree, "private", 0)) == NULL)
             tasklist.now->next->task.priv_data = NULL;
         else
@@ -493,7 +566,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                     change_current_node(data_tree, "#..", 0); // tasklist.task.private.data => tasklist.task.private
                 }
                 break;
-                // case _BIG_EVENT:
+                // case _BIG_EVENT: // 重大事件: private指向一个任务链表
                 //     tasklist.now->next->task.priv_data = (TaskNode *)malloc(sizeof(TaskNode)); // 启动子列表
                 //     break;
 
@@ -539,6 +612,12 @@ int main(int argc, char *argv[])
     //     printf("%s [文件名]\n\n", argv[0]);
     //     return 0;
     // }
+    /*convert*/
+    char *src = "aabbcc";
+    char dest[100];
+    convert_string_from_file(dest, src, 100);
+    printf("%s\n", dest);
+
     ParsedText parsed_text = parse_config_to_lines("../../bootstrap/debug_examples/main.scene.txt");
     puts("\033[01mParsing成功! 以下是行数据: \033[0m");
     for (ParsedNode *ptr = parsed_text.head; ptr->next != NULL; ptr = ptr->next)
@@ -605,12 +684,13 @@ int main(int argc, char *argv[])
     printf("\n");
 #endif
 
+#if STAGE_3 == 1
     TaskList tasklist = data_tree_to_tasklist(&parsed_text);
 
-#if STAGE_3 == 1
     for (int search_tag = 1; search_tag <= 3; search_tag++)
     {
-        // printf("%d name: %s\n", search_tag, search_node_by_id(tasklist.head, search_tag)->task.name);
+        printf("task%d name: %s\n", search_tag, search_node_by_id(tasklist.head, search_tag)->task.name);
+        printf("task%d type: %d\n", search_tag, search_node_by_id(tasklist.head, search_tag)->task.ttype);
         printf("task%d duedate: %d-%d-%d\n", search_tag,
                search_node_by_id(tasklist.head, search_tag)->task.t_duedate[0],
                search_node_by_id(tasklist.head, search_tag)->task.t_duedate[1],

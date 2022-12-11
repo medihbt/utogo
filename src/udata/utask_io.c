@@ -9,6 +9,12 @@ const char *TASKLIST_DEFAULT_ORDER[1] = {
     "time",
 };
 
+const char *TASKLIST_TYPES[3] = {
+    "static",
+    "timelimit",
+    "bigevent",
+};
+
 TaskList new_tasklist(char *list_file_name)
 {
     ParsedText parsed_text = parse_config_to_lines(list_file_name);
@@ -37,6 +43,7 @@ int write_tasklist(TaskList *tasklist, const char *filename)
         return -1;
     }
     char description[MAX_DESCRIPTION_SIZE * 2];
+    char conv_buffer[MAX_DESCRIPTION_SIZE];
     FILE *fp_out = fopen(filename, "w");
     if (fp_out == NULL)
     {
@@ -45,18 +52,111 @@ int write_tasklist(TaskList *tasklist, const char *filename)
                 __func__, filename);
         return -1;
     }
-    fputs("list: # the start of the list", fp_out);
-    fprintf(fp_out, "\tl_id: \"%d\"\n", tasklist->l_id);
-    fprintf(fp_out, "\tname: \"%s\"\n", tasklist->name);
-    fprintf(fp_out, "\tdescription: \"%s\"\n", tasklist->description);
+
+    // 0 list:
+    fputs("list: # the start of the list\n", fp_out);
+    // 1    l_id:
+    fprintf(fp_out, "\tl_id: \"%ld\"\n", tasklist->l_id);
+    // 1    name:
+    if (unconvert_string_from_tasklist(conv_buffer, tasklist->name, MAX_DESCRIPTION_SIZE) == -1)
+        return -1;
+    else
+        fprintf(fp_out, "\tname: \"%s\"\n", conv_buffer);
+    // 1    description:
+    if (unconvert_string_from_tasklist(conv_buffer, tasklist->description, MAX_DESCRIPTION_SIZE) == -1)
+        return -1;
+    else
+        fprintf(fp_out, "\tdescription: \"%s\"\n", conv_buffer);
+    // 1    default_order:
     fprintf(fp_out, "\tdefault_order: \"%s\"\n", TASKLIST_DEFAULT_ORDER[tasklist->default_order]);
     for (TaskNode *ptr = tasklist->head->next; ptr != NULL; ptr = ptr->next)
     {
+        // 1 task:
         fprintf(fp_out, "\ttask:\n");
-        fprintf(fp_out, "\t\tt_id: \"%d\"", ptr->task.t_id);
-        
+        // 2    t_id:
+        fprintf(fp_out, "\t\tt_id: \"%d\"\n", ptr->task.t_id);
+        // 2    finished:
+        fprintf(fp_out, "\t\tfinished: \"%s\"\n",
+                (ptr->task.finished == true ? "yes" : "no"));
+        // 2    type:
+        fprintf(fp_out, "\t\ttype: \"%s\"\n",
+                TASKLIST_TYPES[ptr->task.ttype]);
+        // 2    name:
+        if (unconvert_string_from_tasklist(conv_buffer, ptr->task.name, MAX_DESCRIPTION_SIZE) == -1)
+        {
+            remove(filename);
+            fputs("ERROR message: there is a bug in converting \"name\"", stderr);
+            return -1;
+        }
+        else
+            fprintf(fp_out, "\t\tname: \"%s\"\n", conv_buffer);
+        // 2    description:
+        if (unconvert_string_from_tasklist(conv_buffer, ptr->task.desciption, MAX_DESCRIPTION_SIZE) == -1)
+        {
+            remove(filename);
+            fputs("ERROR message: there is a bug in converting \"name\"", stderr);
+            return -1;
+        }
+        else
+            fprintf(fp_out, "\t\tdescription: \"%s\"\n", conv_buffer);
+        // 2    t_duedate_type:
+        switch (ptr->task.t_duedate_type)
+        {
+        case _ONCE:
+            fprintf(fp_out, "\t\tt_duedate_type: \"once\"\n");
+            break;
+        case _EVERYDAY:
+            fprintf(fp_out, "\t\tt_duedate_type: \"everyday\"\n");
+            break;
+        default: // _CIRCULATE_WEEKLY
+            fprintf(fp_out, "\t\tt_duedate_type: \"w");
+            if ((ptr->task.t_duedate_type & _CIRCULATE_WEEKLY) != 0x0)
+            {
+                for (int i = 0; i < 7; i++)
+                    if ((ptr->task.t_duedate_type & (0x01 << i)) != 0x0)
+                        fprintf(fp_out, "%d", i + 1);
+                fprintf(fp_out, "\"\n");
+            }
+            else
+                fprintf(fp_out, "\t\tt_duedate_type: \"once\"\n");
+            break;
+        }
+        // 2    t_duedate
+        fprintf(fp_out, "\t\tt_duedate: \"%d-%02d-%02d\"\n",
+                ptr->task.t_duedate[0], 
+                ptr->task.t_duedate[1], 
+                ptr->task.t_duedate[2]);
+        // 2    t_duetime
+        fprintf(fp_out, "\t\tt_duetime: \"%02d:%02d:%02d\"\n",
+                ptr->task.t_duetime[2], 
+                ptr->task.t_duetime[1], 
+                ptr->task.t_duetime[0]);
+        // 2    time_ahead
+        fprintf(fp_out, "\t\ttime_ahead: \"%02d:%02d:%02d\"\n",
+                ptr->task.time_ahead[2], 
+                ptr->task.time_ahead[1], 
+                ptr->task.time_ahead[0]);
+        // 2    private
+        fprintf(fp_out, "\t\tprivate:\n");
+        switch (ptr->task.ttype)
+        {
+        case _STATIC:
+            fprintf(fp_out, "\t\t\tNULL:\n");
+            break;
+        case _TIME_LIMIT:
+            if (ptr->task.priv_data == NULL)
+                fprintf(fp_out, "\t\t\ttimespan:\"00:00:00\"\n");
+            else
+                fprintf(fp_out, "\t\t\ttimespan:\"%02d:%02d:%02d\"\n", 
+                        ((int *)ptr->task.priv_data)[2],
+                        ((int *)ptr->task.priv_data)[1],
+                        ((int *)ptr->task.priv_data)[0]);
+            break;
+        default:
+            fprintf(fp_out, "\t\t\tNULL:\n");
+        }
     }
-    
+    fclose(fp_out);
     return 0;
 }
 
@@ -68,5 +168,6 @@ int main(void)
     write_tasklist(&tasklist, "/test.out");
     /* 测试NULL报错是否正常 */
     write_tasklist(NULL, NULL);
+    write_tasklist(&tasklist, "/dev/stdout");
 }
 #endif

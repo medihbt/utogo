@@ -71,12 +71,12 @@ static inline int get_str_level(char *str)
 /*函数: 将配置文件里的字符串转义成正常字符串. 转义标准见文档.
  *参数: 目标字符串, 源字符串, 最大长度
  *返回: 转义后字符串的大小, 返回-1则表示失败*/
-uint64_t convert_string_from_file(char *dest, const char *src, uint64_t len);
+int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len);
 
-/*函数: 将任务清单的字符串转义成配置文件里的字符串.
+/*函数: 将任务清单的字符串反转义成配置文件里的字符串.
  *参数: 目标字符串, 源字符串, 最大长度
  *返回: 转义后字符串的大小, 返回-1则表示失败*/
-uint64_t convert_string_from_tasklist(char *dest, const char *src, uint64_t len);
+int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest_len);
 
 
 /* 清单文件的操作函数 */

@@ -4,7 +4,7 @@
 list:
 	l_id: "1" # List ID. 每一条数据采用<属性名称: "属性值">的方式展现
 	name: "主场景" # 字符串用双引号包裹
-	description: "记录我的日常事件"
+	description: "记录我的日常事件\n还有别的"
 	default_order: "time"
 	task: # 数组: 用相同名字的一组节点表示
 		t_id: "1"
@@ -21,7 +21,7 @@ list:
 	task: "2"
 		t_id: "2"
 		finished: "no"
-		type: "time_count"
+		type: "timelimit"
 		name: "任务2"
 		description: "测试任务2"
 		t_duedate_type: "everyday"
