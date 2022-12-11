@@ -161,13 +161,20 @@ int write_tasklist(TaskList *tasklist, const char *filename)
 }
 
 #if UTASK_IO_DEBUG_MAIN == 1
-int main(void)
+int main(void) //../../bootstrap/debug_examples/main.scene.txt
 {
-    TaskList tasklist = new_tasklist("../../bootstrap/debug_examples/main.scene.txt");
+    TaskList tasklist = new_tasklist("test.out");
+    TaskNode *test = search_node_by_id(tasklist.head, 3);
+    printf("tasklist.task[3].duedate_type = %b\n", test->task.t_duedate_type);
     /* 我没有Linux根目录下的写权限, 此处测试创建文件报错是否正常 */
     write_tasklist(&tasklist, "/test.out");
     /* 测试NULL报错是否正常 */
     write_tasklist(NULL, NULL);
+#ifdef __linux__
     write_tasklist(&tasklist, "/dev/stdout");
+#elif
+    write_tasklist(&tasklist, "test.out");
+#endif
+    delet_all(&(tasklist.head));
 }
 #endif

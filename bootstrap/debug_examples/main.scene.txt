@@ -36,7 +36,7 @@ list:
 		type: "bigevent"
 		name: "任务3"
 		description: "测试任务3"
-		t_duedate_type: "putoff"
+		t_duedate_type: "w1357"
 		t_duedate: "2022-12-06"
 		t_duetime: "08:00:00"
 		time_ahead: "00:00:00"

@@ -466,8 +466,8 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             {
                 tasklist.now->next->task.t_duedate_type = _CIRCULATE_WEEKLY;
                 for (int i = 1; node_guide->line.value[i] != 0x0; i++) // w后面接1234567或其一部分
-                    if (node_guide->line.value[i] >= '0' && node_guide->line.value[i] <= '9')
-                        tasklist.now->next->task.t_duedate_type |= (0x01 << (node_guide->line.value[i] - '0'));
+                    if (node_guide->line.value[i] >= '1' && node_guide->line.value[i] <= '7')
+                        tasklist.now->next->task.t_duedate_type |= (0x01 << (node_guide->line.value[i] - '1'));
             }
             change_current_node(data_tree, "#..", 0);
         }
