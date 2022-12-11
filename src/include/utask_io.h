@@ -98,6 +98,11 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree);
  * 返回: bool成功或失败 */
 bool destory_data_tree(ParsedText *data_tree);
 
+/*函数: 读取清单文件, 生成任务链表
+ *参数: 文件名
+ *返回: 任务链表的特征结构体 */
+TaskList new_tasklist(char *list_file_name);
+
 /* 函数: 根据结构体内容写回文本文件
  * 参数: 任务清单结构体
  * 返回: int 0表示成功, -1表示失败*/

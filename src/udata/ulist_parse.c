@@ -1,8 +1,10 @@
+/*Copyright (c) 2022-2023 Imagine Studio PBLF Group.*/
+
 #include "../include/utask_io.h"
 
 /*DEBUG用的宏*/
-#define UTASK_IO_DEBUG_C 0
-#define UTASK_IO_DEBUG_OUTPUT 0
+#define UTASK_IO_DEBUG_C 1
+#define UTASK_IO_DEBUG_OUTPUT 1
 #define UTASK_CONVERT 1
 
 #define UTASK_MEM_BLOCK_SIZE 1024
@@ -213,7 +215,6 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
     return parsed_text->now;
 }
 
-#if UTASK_CONVERT == 1
 TaskList data_tree_to_tasklist(ParsedText *data_tree)
 {
     /*初始化返回节点*/
@@ -511,7 +512,20 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
 
     return tasklist;
 }
-#endif
+
+bool destory_data_tree(ParsedText *data_tree)
+{
+    ParsedNode *ptr_prev = data_tree->head;
+    for(ParsedNode *ptr = data_tree->head->child; ptr != NULL;)
+    {
+        free(ptr->line.value);
+        free(ptr_prev);
+        ptr_prev = ptr;
+        ptr = ptr->child != NULL ? ptr->child : ptr->next;
+    }
+    free(ptr_prev);
+    return true;
+}
 
 #if UTASK_IO_DEBUG_C == 1
 /* 函数: 测试使用的主程序 */
@@ -607,6 +621,8 @@ int main(int argc, char *argv[])
                search_node_by_id(tasklist.head, search_tag)->task.t_duetime[0]);
     }
 #endif
+
+    destory_data_tree(&parsed_text);
 
     return 0;
 }
