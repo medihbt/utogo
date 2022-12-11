@@ -97,7 +97,7 @@ bool utask_delet_one_node(TaskNode *L, char id);
 /* 函数: 查找一个节点并打印
  * 参数: 头节点, 任务id
  * 返回: 指向所求对象的指针 */
-TaskNode *search_node_by_id(TaskNode *L, char id);
+TaskNode *search_node_by_id(TaskNode *L, int id);
 
 /* 函数: 根据id修改一个节点
  * 参数: 链表头, 待修改的信息, 任务id

@@ -1,7 +1,8 @@
 #include "../include/utask_io.h"
 
 /*DEBUG用的宏*/
-#define UTASK_IO_DEBUG_C 1
+#define UTASK_IO_DEBUG_C 0
+#define UTASK_IO_DEBUG_OUTPUT 0
 #define UTASK_CONVERT 1
 
 #define UTASK_MEM_BLOCK_SIZE 1024
@@ -114,7 +115,7 @@ ParsedText *generate_data_tree(ParsedText *parsed_text)
     if (parsed_text == NULL)
         return NULL;
 
-    /*令头节点的子节点指针指向下一节点，next指针指空，令下一级的父节点为HEAD*/
+    /*令所有节点成为头节点的子节点*/
     ParsedNode *parsed_head = parsed_text->head;
     parsed_head->child = parsed_head->next;
     parsed_head->next = NULL;
@@ -124,42 +125,35 @@ ParsedText *generate_data_tree(ParsedText *parsed_text)
     ParsedNode *content[16] = {parsed_head, NULL};
     ParsedNode **base = content + 1, **top = content + 1;
 
-    /*对数据块进行操作*/
     ParsedNode *ptr_op = parsed_head->child, *ptr_prev = parsed_head;
     *top = ptr_op;
     while (ptr_op != NULL)
     {
         top = base + ptr_op->line.level;
-        if (ptr_op->line.level > (ptr_prev->line.level + 1)) // 测试
+        ParsedNode *ptmp = NULL;
+        int delta_level = ptr_op->line.level - ptr_prev->line.level;
+        if (delta_level >= 2)
         {
-            fprintf(stderr, "ERROR reported by function %s: Syntax error caused by too many indents of the file\n", __func__);
+            fprintf(stderr, "ERROR message from %s() in %s: syntax error in tasklist file\n", __func__, __FILE__);
             return NULL;
         }
 
-        ParsedNode *ptmp = NULL;
-        switch ((ptr_op->line.level) - (ptr_prev->line.level))
+        switch (delta_level)
         {
-        case 1:
+        case 1: // 当前节点是上一个的子节点, ptr_prev与ptr_op建立父子关系
             ptr_op->parent = ptr_prev;
             ptr_prev->child = ptr_op;
-            ptr_prev->next = ptr_op->next;
-            /*以上建立父子关系*/
             ptmp = ptr_prev;
             break;
-        case 0:
+        case 0: // 当前节点与上一个节点同级, ptr_prev与ptr_op的父节点建立父子关系
             ptr_op->parent = ptr_prev->parent;
-            ptr_prev->parent->next = ptr_op->next;
-            /*以上建立父子关系*/
-            ptmp = ptr_prev->parent;
-            break;
-        default: // case <= -1
-            ptmp = ptr_prev;
-            for (int i = 0; i < (ptr_prev->line.level) - (ptr_op->line.level); i++)
-                ptmp = ptmp->parent;
-
-            ptr_op->parent = base[ptr_op->line.level]->parent;
+            ptmp = ptr_op->parent;
+        default: // 下一节点比上一节点少缩进了, ptr_prev与它同级前一节点的父节点建立父子关系
+            ptr_op->parent = (*top)->parent;
+            ptmp = ptr_op->parent;
             break;
         }
+        // 当前节点的所有父节点往后推一格
         while (ptmp != parsed_head)
         {
             ptmp->next = ptr_op->next;
@@ -169,6 +163,7 @@ ParsedText *generate_data_tree(ParsedText *parsed_text)
         ptr_prev = ptr_op;
         ptr_op = ptr_op->next;
     }
+    parsed_text->head->next = NULL;
     return parsed_text;
 }
 
@@ -180,10 +175,10 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
         return NULL;
     else if (parsed_text->now == NULL)
         return NULL;
-    
+
     ParsedNode *ptext_now_dump = parsed_text->now;
 
-    if (!strcmp(node_name, "#.."))  // "#.."返回父节点，灵感来源于上一级文件夹(名称为"..")
+    if (!strcmp(node_name, "#..")) // "#.."返回父节点，灵感来源于上一级文件夹(名称为"..")
     {
         if (parsed_text->now->parent == NULL)
             return NULL;
@@ -256,31 +251,49 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
     }
 
     // [tasklist.l_id]  int(文件) -> int(结构体)
-    if ((node_guide = change_current_node(data_tree, "l_id", 0)) == NULL || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "l_id", 0)) == NULL) // 失败时data_tree的now节点不会自动跳转
         tasklist.l_id = 0;
     else
-        sscanf(node_guide->line.value, "%ld", &tasklist.l_id);
-    node_guide = change_current_node(data_tree, "#..", 0); // 返回上一级节点
+    {
+        if (node_guide->line.value == NULL || sscanf(node_guide->line.value, "%ld", &tasklist.l_id) < 1)
+            tasklist.l_id = 0;
+        change_current_node(data_tree, "#..", 0); // 返回上一级节点
+    }
     // [tasklist.name]  string -> char[256]
-    if ((node_guide = change_current_node(data_tree, "name", 0)) == NULL || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "name", 0)) == NULL)
         memcpy(tasklist.name, "Untitled", 9);
     else
-        strncpy(tasklist.name, node_guide->line.name, 256);
-    node_guide = change_current_node(data_tree, "#..", 0);
+    {
+        if (node_guide->line.value == NULL)
+            memcpy(tasklist.name, "Untitled", 9);
+        else
+            strncpy(tasklist.name, node_guide->line.value, 256);
+        change_current_node(data_tree, "#..", 0);
+    }
     // [tasklist.description]   string -> char[1024]
-    if ((node_guide = change_current_node(data_tree, "description", 0)) == NULL || (node_guide->line.value == NULL))
+    if ((node_guide = change_current_node(data_tree, "description", 0)) == NULL)
         memcpy(tasklist.description, "\0\0\0", 4);
     else
-        strncpy(tasklist.description, node_guide->line.value, 1024);
-    node_guide = change_current_node(data_tree, "#..", 0);
+    {
+        if (node_guide->line.value == NULL)
+            memcpy(tasklist.description, "\0\0\0", 4);
+        else
+            strncpy(tasklist.description, node_guide->line.value, 1024);
+        change_current_node(data_tree, "#..", 0);
+    }
     // [tasklist.default_order] string -> int
-    if ((node_guide = change_current_node(data_tree, "default_order", 0)) == NULL || (node_guide->line.value == NULL))
-        tasklist.default_order = _TIME;
-    else if (!strcmp(node_guide->line.value, "time"))
+    if ((node_guide = change_current_node(data_tree, "default_order", 0)) == NULL)
         tasklist.default_order = _TIME;
     else
-        tasklist.default_order = 0x0;
-    node_guide = change_current_node(data_tree, "#..", 0);
+    {
+        if (node_guide->line.value == NULL)
+            tasklist.default_order = _TIME;
+        else if (!strcmp(node_guide->line.value, "time"))
+            tasklist.default_order = _TIME;
+        else
+            tasklist.default_order = 0x0;
+        change_current_node(data_tree, "#..", 0);
+    }
     // [tasklist.task]  (子链表) array -> TaskNode *heads
     int task_count = 0;
     do
@@ -289,7 +302,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
         // [tasklist.task[tasks_count]]
         if (change_current_node(data_tree, "task", task_count) == NULL)
             break;
-
+        // else if success
         // 新建一个任务接收读取的内容
         tasklist.now->next = (TaskNode *)malloc(sizeof(TaskNode));
         *(tasklist.now->next) = (TaskNode){
@@ -301,107 +314,182 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
         };
 
         // tasklist.task[tasks_count].t_id      int -> int
-        if ((node_guide = change_current_node(data_tree, "t_id", 0)) == NULL || (node_guide->line.value == NULL))
+        int debug_var;
+        if ((node_guide = change_current_node(data_tree, "t_id", 0)) == NULL)
             tasklist.now->next->task.t_id = -1;
-        else if (sscanf(node_guide->line.value, "%d", &tasklist.now->next->task.t_id) < 1)
-            tasklist.now->next->task.t_id = -1;
-        tasklist.max_task_id = tasklist.max_task_id > tasklist.now->next->task.t_id ? tasklist.max_task_id : tasklist.now->next->task.t_id;
-        change_current_node(data_tree, "#..", 0);
-        // tasklist.task[tasks_count].finished  string -> int
-        if ((node_guide = change_current_node(data_tree, "finished", 0)) == NULL || (node_guide->line.value == NULL))
-            tasklist.now->next->task.finished = false;
-        else if ((!strncmp(node_guide->line.value, "yes", 3)) || (!strncmp(node_guide->line.value, "YES", 3)))
-            tasklist.now->next->task.finished = true;
         else
+        {
+            if (node_guide->line.value == NULL)
+                tasklist.now->next->task.t_id = -1;
+            else if (sscanf(node_guide->line.value, "%d", &tasklist.now->next->task.t_id) < 1)
+                tasklist.now->next->task.t_id = -1;
+            change_current_node(data_tree, "#..", 0);
+        }
+        tasklist.max_task_id = tasklist.max_task_id > tasklist.now->next->task.t_id ? tasklist.max_task_id : tasklist.now->next->task.t_id;
+
+        // tasklist.task[tasks_count].finished  string -> int
+        if ((node_guide = change_current_node(data_tree, "finished", 0)) == NULL)
             tasklist.now->next->task.finished = false;
-        change_current_node(data_tree, "#..", 0);
+        else
+        {
+            if (node_guide->line.value == NULL)
+                tasklist.now->next->task.finished = false;
+            else if ((!strncmp(node_guide->line.value, "yes", 3)) || (!strncmp(node_guide->line.value, "YES", 3)))
+                tasklist.now->next->task.finished = true;
+            else
+                tasklist.now->next->task.finished = false;
+            change_current_node(data_tree, "#..", 0);
+        }
+
         // tasklist.task[tasks_count].type      string -> int
-        if ((node_guide = change_current_node(data_tree, "type", 0)) == NULL || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "type", 0)) == NULL)
             tasklist.now->next->task.ttype = _STATIC;
-        else if (!strncmp(node_guide->line.value, "static", 6)) // 普通任务
-            tasklist.now->next->task.ttype = _STATIC;
-        else if (!strncmp(node_guide->line.value, "timelimit", 5)) // 限时任务
-            tasklist.now->next->task.ttype = _TIME_LIMIT;
-        else if (!strncmp(node_guide->line.value, "bigevent", 4)) // 重大事件
-            tasklist.now->next->task.ttype = _BIG_EVENT;
-        change_current_node(data_tree, "#..", 0);
+        else
+        {
+            if (node_guide->line.value == NULL)
+                tasklist.now->next->task.ttype = _STATIC;
+            if (!strncmp(node_guide->line.value, "static", 6)) // 普通任务
+                tasklist.now->next->task.ttype = _STATIC;
+            else if (!strncmp(node_guide->line.value, "timelimit", 5)) // 限时任务
+                tasklist.now->next->task.ttype = _TIME_LIMIT;
+            else if (!strncmp(node_guide->line.value, "bigevent", 4)) // 重大事件
+                tasklist.now->next->task.ttype = _BIG_EVENT;
+            change_current_node(data_tree, "#..", 0);
+        }
         // tasklist.task[tasks_count].name      string -> char[256]
-        if ((node_guide = change_current_node(data_tree, "name", 0)) == NULL || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "name", 0)) == NULL)
             memcpy(tasklist.now->next->task.name, "Untitled", 9);
         else
-            strncpy(tasklist.now->next->task.name, node_guide->line.value, 256);
-        change_current_node(data_tree, "#..", 0);
+        {
+            if (node_guide->line.value == NULL)
+                memcpy(tasklist.now->next->task.name, "Untitled", 9);
+            else
+                strncpy(tasklist.now->next->task.name, node_guide->line.value, 256);
+            change_current_node(data_tree, "#..", 0);
+        }
         // tasklist.task[tasks_count].description       string -> char *
-        if ((node_guide = change_current_node(data_tree, "description", 0)) == NULL || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "description", 0)) == NULL)
             tasklist.now->next->task.desciption[0] = 0x0;
         else
-            strncpy(tasklist.now->next->task.desciption, node_guide->line.value, MAX_DESCRIPTION_SIZE);
-        change_current_node(data_tree, "#..", 0);
-        // tasklist.task[tasks_count].t_duedate_type
-        if ((node_guide = change_current_node(data_tree, "t_duedate_type", 0)) == NULL || (node_guide->line.value == NULL))
-            tasklist.now->next->task.t_duedate_type = _ONCE;
-        else if (!strncmp(node_guide->line.value, "once", 4)) // 一次
-            tasklist.now->next->task.t_duedate_type = _ONCE;
-        else if (!strncmp(node_guide->line.value, "everyday", 5))
-            tasklist.now->next->task.t_duedate_type = _EVERYDAY; // 每天
-        else if (node_guide->line.value[0] == 'w')               // 每周循环, 以w开头
         {
-            tasklist.now->next->task.t_duedate_type = _CIRCULATE_WEEKLY;
-            for (int i = 1; node_guide->line.value[i] != 0x0; i++) // w后面接1234567或其一部分
-                if (node_guide->line.value[i] >= '0' && node_guide->line.value[i] <= '9')
-                    tasklist.now->next->task.t_duedate_type |= (0x01 << (node_guide->line.value[i] - '0'));
+            if (node_guide->line.value == NULL)
+                tasklist.now->next->task.desciption[0] = 0x0;
+            else
+                strncpy(tasklist.now->next->task.desciption, node_guide->line.value, MAX_DESCRIPTION_SIZE);
+            change_current_node(data_tree, "#..", 0);
         }
-        change_current_node(data_tree, "#..", 0);
+        // tasklist.task[tasks_count].t_duedate_type
+        if ((node_guide = change_current_node(data_tree, "t_duedate_type", 0)) == NULL)
+            tasklist.now->next->task.t_duedate_type = _ONCE;
+        else
+        {
+            if (node_guide->line.value == NULL)
+                tasklist.now->next->task.t_duedate_type = _ONCE;
+            else if (!strncmp(node_guide->line.value, "once", 4)) // 一次
+                tasklist.now->next->task.t_duedate_type = _ONCE;
+            else if (!strncmp(node_guide->line.value, "everyday", 5))
+                tasklist.now->next->task.t_duedate_type = _EVERYDAY; // 每天
+            else if (node_guide->line.value[0] == 'w')               // 每周循环, 以w开头
+            {
+                tasklist.now->next->task.t_duedate_type = _CIRCULATE_WEEKLY;
+                for (int i = 1; node_guide->line.value[i] != 0x0; i++) // w后面接1234567或其一部分
+                    if (node_guide->line.value[i] >= '0' && node_guide->line.value[i] <= '9')
+                        tasklist.now->next->task.t_duedate_type |= (0x01 << (node_guide->line.value[i] - '0'));
+            }
+            change_current_node(data_tree, "#..", 0);
+        }
         // tasklist.task[tasks_count].t_duedate
-        if ((node_guide = change_current_node(data_tree, "t_duedate", 0)) == NULL || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "t_duedate", 0)) == NULL)
         {
             tasklist.now->next->task.t_duedate[0] = 2000;
             tasklist.now->next->task.t_duedate[1] = 1;
             tasklist.now->next->task.t_duedate[2] = 1;
         }
         else
-            sscanf(node_guide->line.value, "%d-%d-%d",
-                   tasklist.now->next->task.t_duedate,
-                   tasklist.now->next->task.t_duedate + 1,
-                   tasklist.now->next->task.t_duedate + 2);
-        change_current_node(data_tree, "#..", 0);
+        {
+            if (node_guide->line.value == NULL || sscanf(node_guide->line.value, "%d-%d-%d",
+                                                         tasklist.now->next->task.t_duedate,
+                                                         tasklist.now->next->task.t_duedate + 1,
+                                                         tasklist.now->next->task.t_duedate + 2) < 3)
+            {
+                tasklist.now->next->task.t_duedate[0] = 2000;
+                tasklist.now->next->task.t_duedate[1] = 1;
+                tasklist.now->next->task.t_duedate[2] = 1;
+            }
+            change_current_node(data_tree, "#..", 0);
+        }
         // tasklist.task[tasks_count].t_duetime
-        if ((node_guide = change_current_node(data_tree, "t_duetime", 0)) == NULL || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "t_duetime", 0)) == NULL)
         {
             tasklist.now->next->task.t_duetime[0] = 0;
             tasklist.now->next->task.t_duetime[1] = 0;
             tasklist.now->next->task.t_duetime[2] = 0;
         }
         else
-            sscanf(node_guide->line.value, "%d:%d:%d",
-                   tasklist.now->next->task.t_duetime + 2,
-                   tasklist.now->next->task.t_duetime + 1,
-                   tasklist.now->next->task.t_duetime);
-        change_current_node(data_tree, "#..", 0);
+        {
+            if (node_guide->line.value == NULL)
+            {
+                tasklist.now->next->task.t_duetime[0] = 0;
+                tasklist.now->next->task.t_duetime[1] = 0;
+                tasklist.now->next->task.t_duetime[2] = 0;
+            }
+            else
+                sscanf(node_guide->line.value, "%d:%d:%d",
+                       tasklist.now->next->task.t_duetime + 2,
+                       tasklist.now->next->task.t_duetime + 1,
+                       tasklist.now->next->task.t_duetime);
+            change_current_node(data_tree, "#..", 0);
+        }
         // tasklist.task[tasks_count].time_ahead
-        if ((node_guide = change_current_node(data_tree, "time_ahead", 0)) == NULL || (node_guide->line.value == NULL))
+        if ((node_guide = change_current_node(data_tree, "time_ahead", 0)) == NULL)
         {
             tasklist.now->next->task.time_ahead[0] = 0;
             tasklist.now->next->task.time_ahead[1] = 0;
             tasklist.now->next->task.time_ahead[2] = 0;
         }
         else
-            sscanf(node_guide->line.value, "%d:%d:%d",
-                   tasklist.now->next->task.time_ahead + 2,
-                   tasklist.now->next->task.time_ahead + 1,
-                   tasklist.now->next->task.time_ahead);
-        change_current_node(data_tree, "#..", 0);
+        {
+            if (node_guide->line.value == NULL)
+            {
+                tasklist.now->next->task.time_ahead[0] = 0;
+                tasklist.now->next->task.time_ahead[1] = 0;
+                tasklist.now->next->task.time_ahead[2] = 0;
+            }
+            else
+                sscanf(node_guide->line.value, "%d:%d:%d",
+                       tasklist.now->next->task.time_ahead + 2,
+                       tasklist.now->next->task.time_ahead + 1,
+                       tasklist.now->next->task.time_ahead);
+            change_current_node(data_tree, "#..", 0);
+        }
         // tasklist.task[tasks_count].private
         if ((node_guide = change_current_node(data_tree, "private", 0)) == NULL)
+            tasklist.now->next->task.priv_data = NULL;
+        else
+        {
             switch (tasklist.now->next->task.ttype)
             {
-            case _TIME_LIMIT:
+            case _TIME_LIMIT: // 限时任务: private指向一个时间数组
                 tasklist.now->next->task.priv_data = (int *)malloc(sizeof(int) * 3);
-                if ((node_guide = change_current_node(data_tree, "timespan", 0)) == NULL || node_guide->line.value == NULL)
+                if ((node_guide = change_current_node(data_tree, "timespan", 0)) == NULL)
                 {
                     ((int *)tasklist.now->next->task.priv_data)[0] = 0;
                     ((int *)tasklist.now->next->task.priv_data)[1] = 0;
                     ((int *)tasklist.now->next->task.priv_data)[2] = 0;
+                }
+                else
+                {
+                    if (node_guide->line.value == NULL || sscanf(node_guide->line.value, "%d:%d:%d",
+                                                                 (int *)tasklist.now->next->task.priv_data + 2,
+                                                                 (int *)tasklist.now->next->task.priv_data + 1,
+                                                                 (int *)tasklist.now->next->task.priv_data) < 3)
+                    {
+                        /*注意写法. 先写出private的完整路径, 然后强制类型转换为(int *), 然后当数组用*/
+                        ((int *)tasklist.now->next->task.priv_data)[0] = 0;
+                        ((int *)tasklist.now->next->task.priv_data)[1] = 0;
+                        ((int *)tasklist.now->next->task.priv_data)[2] = 0;
+                    }
+                    change_current_node(data_tree, "#..", 0); // tasklist.task.private.data => tasklist.task.private
                 }
                 break;
                 // case _BIG_EVENT:
@@ -411,8 +499,13 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             default:
                 break;
             }
-        // [tasklist] cd ..
-        change_current_node(data_tree, "#..", 0);
+            /*成功则返回tasklist.task*/
+            change_current_node(data_tree, "#..", 0); // tasklist.task.private => tasklist.task
+        }
+        /* tasklist.now往后指，然后cd到上一级节点
+         * 失败则datatree.now停留在tasklist.task, 直接返回tasklist*/
+        tasklist.now = tasklist.now->next;
+        change_current_node(data_tree, "#..", 0); // tasklist.task => tasklist
         task_count++;
     } while (1);
 
@@ -422,6 +515,8 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
 
 #if UTASK_IO_DEBUG_C == 1
 /* 函数: 测试使用的主程序 */
+#define STAGE_2_PART 1
+#define STAGE_3 1
 int main(int argc, char *argv[])
 {
     // if (argc < 2)
@@ -440,21 +535,78 @@ int main(int argc, char *argv[])
 
     generate_data_tree(&parsed_text);
 
-    ParsedNode *node = change_current_node(&parsed_text, "#/", 0);
-    node = change_current_node(&parsed_text, "list", 0);
-    node = change_current_node(&parsed_text, "task", 0);
-    node = change_current_node(&parsed_text, "t_id", 0);
-    node = change_current_node(&parsed_text, "#..", 0);
-    if (node == NULL)
-        puts("ERROR: Node not found");
-    else
+    /*全图测试*/
+    int level = 0;
+    for (ParsedNode *ptr = parsed_text.head->child; ptr != NULL;)
     {
-        puts("\033[01mFinding成功! 以下是节点数据: \033[0m");
-        printf("\033[01m%4d\033[0m \033[01;32m%s\033[0m = %s\n",
-               node->line.level,
-               node->line.name,
-               node->line.value);
+        if (level == 1)
+            printf(".");
+        print_n_tab(stdout, ptr->line.level);
+        printf("\033[01;32m%s\033[0m = \033[01m%s\033[0m\n", ptr->line.name, ptr->line.value);
+        if (ptr->child != NULL)
+        {
+            ptr = ptr->child;
+            level = 1;
+        }
+        else
+        {
+            ptr = ptr->next;
+            level = 0;
+        }
     }
+#if STAGE_2_PART == 1
+    /*同级元素测试*/
+    puts("同级元素测试:\n");
+    // l0: #HEAD.child
+    puts("L0: ");
+    for (ParsedNode *ptr = parsed_text.head->child; ptr != NULL; ptr = ptr->next)
+    {
+        print_n_tab(stdout, ptr->line.level);
+        printf("\033[01;32m%s\033[0m = \033[01m%s\033[0m\n", ptr->line.name, ptr->line.value);
+    }
+    printf("\n");
+    // l1: list.child
+    puts("L1: ");
+    for (ParsedNode *ptr = parsed_text.head->child->child; ptr != NULL; ptr = ptr->next)
+    {
+        print_n_tab(stdout, ptr->line.level);
+        printf("\033[01;32m%s\033[0m = \033[01m%s\033[0m\n", ptr->line.name, ptr->line.value);
+    }
+    printf("\n");
+    // l2: task[0].child
+    puts("L2[0]: ");
+    for (ParsedNode *ptr = parsed_text.head->child->child->next->next->next->next->child; (ptr != NULL) && (ptr->line.level == 2); ptr = ptr->next)
+    {
+        print_n_tab(stdout, ptr->line.level);
+        printf("\033[01;32m%s\033[0m = \033[01m%s\033[0m\n", ptr->line.name, ptr->line.value);
+    }
+    printf("\n");
+    // l2: task[1].child
+    puts("L2[1]: ");
+    for (ParsedNode *ptr = parsed_text.head->child->child->next->next->next->next->child->next; (ptr != NULL) && (ptr->line.level == 2); ptr = ptr->next)
+    {
+        print_n_tab(stdout, ptr->line.level);
+        printf("\033[01;32m%s\033[0m = \033[01m%s\033[0m\n", ptr->line.name, ptr->line.value);
+    }
+    printf("\n");
+#endif
+
+    TaskList tasklist = data_tree_to_tasklist(&parsed_text);
+
+#if STAGE_3 == 1
+    for (int search_tag = 1; search_tag <= 3; search_tag++)
+    {
+        // printf("%d name: %s\n", search_tag, search_node_by_id(tasklist.head, search_tag)->task.name);
+        printf("task%d duedate: %d-%d-%d\n", search_tag,
+               search_node_by_id(tasklist.head, search_tag)->task.t_duedate[0],
+               search_node_by_id(tasklist.head, search_tag)->task.t_duedate[1],
+               search_node_by_id(tasklist.head, search_tag)->task.t_duedate[2]);
+        printf("task%d duetime: %02d:%02d:%02d\n", search_tag,
+               search_node_by_id(tasklist.head, search_tag)->task.t_duetime[2],
+               search_node_by_id(tasklist.head, search_tag)->task.t_duetime[1],
+               search_node_by_id(tasklist.head, search_tag)->task.t_duetime[0]);
+    }
+#endif
 
     return 0;
 }

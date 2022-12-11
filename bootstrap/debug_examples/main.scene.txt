@@ -12,13 +12,13 @@ list:
 		type: "static"
 		name: "任务1"
 		description: "测试任务1"
-		t_duedate_type: "onetime"
+		t_duedate_type: "once"
 		t_duedate: "2022-12-07"
 		t_duetime: "08:30:00"
 		time_ahead: "01:00:00"
 		private:
-			NULL: # ptr_prev
-	task: "2" #     ptr_op
+			NULL:
+	task: "2"
 		t_id: "2"
 		finished: "no"
 		type: "time_count"
@@ -27,7 +27,7 @@ list:
 		t_duedate_type: "everyday"
 		t_duedate: "2022-12-06"
 		t_duetime: "12:00:00"
-		tine_ahead: "00:00:00"
+		time_ahead: "00:00:00"
 		private:
 			timespan: "02:00:00"
 	task:
@@ -39,7 +39,7 @@ list:
 		t_duedate_type: "putoff"
 		t_duedate: "2022-12-06"
 		t_duetime: "08:00:00"
-		tine_ahead: "00:00:00"
+		time_ahead: "00:00:00"
 		private:
 			subtask:
 				date: "2022-12-06"

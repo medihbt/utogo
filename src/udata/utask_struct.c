@@ -160,7 +160,7 @@ bool utask_delet_one_node(TaskNode *L, char id) // 删除一个节点
     return true;
 }
 
-TaskNode *search_node_by_id(TaskNode *L, char id) // 查找
+TaskNode *search_node_by_id(TaskNode *L, int id) // 查找
 {
     TaskNode *cur;
     cur = L->next;

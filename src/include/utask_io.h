@@ -87,12 +87,12 @@ ParsedText *generate_data_tree(ParsedText *parsed_text);
  * 返回: 成功则返回找到的节点指针, 失败则返回NULL. */
 ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order);
 
-/*以下函数未完成*/
 /* 函数: 读取整理好的文本树, 转化为Tasklist链表
  * 参数: 构造好的语义树指针
  * 返回: 构造好的TaskList */
 TaskList data_tree_to_tasklist(ParsedText *data_tree);
 
+/*以下函数未完成*/
 /* 函数: 销毁语义树
  * 参数: 指向语义树的指针
  * 返回: bool成功或失败 */
