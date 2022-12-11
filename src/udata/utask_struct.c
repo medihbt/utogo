@@ -240,3 +240,31 @@ bool delet_all(TaskNode **L)
     *L = NULL;
     return true;
 }
+
+
+bool finished_sort(TaskNode *head)
+//按照链表内部的finished/not来进行排序
+{
+    TaskNode* cur = head->next;
+    TaskInfo tem;
+    bool ex = false;
+    while (cur)
+    {
+        if (cur->task.finished == false)
+        {
+            tem = cur->task;
+          ex =  utask_delet_one_node(head, tem.t_id);
+            ex = utask_insert(head, tem, 0);
+            return ex;
+        }
+        if (cur->task.finished == true)
+        {
+            tem = cur->task;
+            ex = utask_delet_one_node(head, tem.t_id);
+            ex = utask_insert(head, tem, 1);
+            return ex;
+        }
+    }
+    
+    
+}
