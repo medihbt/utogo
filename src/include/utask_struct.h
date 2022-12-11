@@ -130,6 +130,9 @@ bool delet_all(TaskNode **L);
  * 返回:
  */
 
+ bool finished_sort(TaskNode *head)
+
+
 #ifdef __cplusplus
 }
 #endif
