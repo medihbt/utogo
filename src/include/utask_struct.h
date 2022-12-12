@@ -1,5 +1,19 @@
-/* Copyright (c) 2022-2023 by AimVim and Medi H.B.T. All rights reserved.
- * FILE: utask_struct.h
+/*  Copyright (c) 2022-2023 by Imagine Studio Group.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+/* FILE: utask_struct.h
  * ENCODING: UTF-8
  * This Header contains the definition of the basic task structure,
  * together with declarations of its operations. 
@@ -124,13 +138,16 @@ void put_all(TaskNode *L);
  * 返回: 无 */
 bool delet_all(TaskNode **L);
 
+/* 函数: 按照任务是否完成进行排序, 没有完成的排在前面(是吗?@楚楚)
+ * 参数: 任务链表头节点
+ * 返回: 排序成功则返回true, 否则为false */
+bool finished_sort(TaskNode *head);
+
 // 注释模板
 /* 函数:
  * 参数:
  * 返回:
  */
-
- bool finished_sort(TaskNode *head)
 
 
 #ifdef __cplusplus

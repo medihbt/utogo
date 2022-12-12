@@ -38,7 +38,7 @@ git clone https://gitee.com/medihbt/utogo.git
   
   大多数像VS Code, Visual Studio, QtCreator这样的编辑器/IDE集成了`git`,然而我还没摸熟它们的用法.
 
-## 项目文件夹及作用(待补充)
+## 项目文件夹及作用
 
 - `docs`: 项目文档文件夹,存放项目说明及技术信息
 
@@ -47,6 +47,10 @@ git clone https://gitee.com/medihbt/utogo.git
 - `src`: 项目的正式代码
 
 - `build`: 编译生成的文件存放于此, 一般情况下生成的文件不能上传到GitHub
+
+## 编译流程
+
+
 
 ## 开发流程:
 

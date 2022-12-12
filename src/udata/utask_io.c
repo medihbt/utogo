@@ -1,9 +1,22 @@
-/*Copyright (c) 2022-2023 Imagine Studio PBLF Group.*/
+/*  Copyright (c) 2022-2023 Imagine Studio PBLF Group.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 /*utask_io.c -- Main Part of U.toGo Configuration Analyzing Module*/
 #include "../include/utask_io.h"
 #include "../include/err.h"
 
-#define UTASK_IO_DEBUG_MAIN 1
+#define UTASK_IO_DEBUG_MAIN 0
 
 const char *TASKLIST_DEFAULT_ORDER[1] = {
     "time",
@@ -161,11 +174,12 @@ int write_tasklist(TaskList *tasklist, const char *filename)
 }
 
 #if UTASK_IO_DEBUG_MAIN == 1
-int main(void) //../../bootstrap/debug_examples/main.scene.txt
+int main(int argc, char *argv[]) //../../bootstrap/debug_examples/main.scene.txt
 {
-    TaskList tasklist = new_tasklist("test.out");
-    TaskNode *test = search_node_by_id(tasklist.head, 3);
-    printf("tasklist.task[3].duedate_type = %b\n", test->task.t_duedate_type);
+    TaskList tasklist = new_tasklist("../../bootstrap/debug_examples/main.scene.txt");
+    // TaskNode *test = search_node_by_id(tasklist.head, 4);
+    printf("所有任务的最大id是 = %ld\n", tasklist.max_task_id);
+    // printf("tasklist.task[4].duedate_type = %b\n", test->task.t_duedate_type);
     /* 我没有Linux根目录下的写权限, 此处测试创建文件报错是否正常 */
     write_tasklist(&tasklist, "/test.out");
     /* 测试NULL报错是否正常 */

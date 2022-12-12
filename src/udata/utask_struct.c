@@ -1,6 +1,19 @@
-#include "../include/utask_struct.h"
+/*  Copyright (c) 2022-2023 by Imagine Studio Group.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-/*Medi注: 本次新增的两个函数时间复杂度都为O(n), 省着点用!!!*/
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+/* utask_struct.c -- U.toGo任务结构体操作的实现 */
+#include "../include/utask_struct.h"
 
 /* 函数: 按id搜索任务, 返回任务在链表中的位置，同时将任务前一项的指针
  *       传给`prev_item`. 如果找不到，那么`prev_item = NULL`且函数返回`0`.
@@ -253,7 +266,7 @@ bool finished_sort(TaskNode *head)
         if (cur->task.finished == false)
         {
             tem = cur->task;
-          ex =  utask_delet_one_node(head, tem.t_id);
+            ex = utask_delet_one_node(head, tem.t_id);
             ex = utask_insert(head, tem, 0);
             return ex;
         }

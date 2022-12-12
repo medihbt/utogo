@@ -1,10 +1,23 @@
-/*Copyright (c) 2022-2023 Imagine Studio PBLF Group.*/
+/*  Copyright (c) 2022-2023 Imagine Studio PBLF Group.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #include "../include/utask_io.h"
 
 /*DEBUG用的宏*/
-#define UTASK_IO_DEBUG_C 0
-#define UTASK_IO_DEBUG_OUTPUT 0
+#define UTASK_IO_DEBUG_C 1
+#define UTASK_IO_DEBUG_OUTPUT 1
 #define UTASK_CONVERT 1
 
 #define UTASK_MEM_BLOCK_SIZE 1024
@@ -24,9 +37,18 @@ int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len)
             src++;
             switch (*src)
             {
-            case 'n': *dest = '\n'; break;
-            case 't': *dest = '\t'; break;
-            case '\\': default: *dest = '\\';
+            case 'n':
+                *dest = '\n';
+                break;
+            case 't':
+                *dest = '\t';
+                break;
+            case '\"':
+                *dest = '\"';
+                break;
+            case '\\':
+            default:
+                *dest = '\\';
             }
         }
         else
@@ -61,6 +83,10 @@ int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest
             *dest = 'n';
             unconv_len++;
             break;
+        case '\"':
+            *(dest++) = '\\';
+            *dest = '\"';
+            unconv_len++;
         default:
             *dest = *src;
             break;
@@ -104,11 +130,13 @@ int get_value_from_buffer(char **p_begin_out, /*const */ char *buff)
 
     while (*buff != '\"')
     {
-        if (*buff == '\n')
+        if (*buff == '\n') // 文件结束但没有引号, 配置文件语法错误
         {
             *p_begin_out = NULL;
             return 0;
         }
+        else if (*buff == '\\') // 避开转义字符的影响
+            buff++;
         buff++;
     }
 
@@ -117,6 +145,7 @@ int get_value_from_buffer(char **p_begin_out, /*const */ char *buff)
 
 ParsedText parse_config_to_lines(char *fileName)
 {
+    /*初始化行链表的特征结构体*/
     ParsedText parsed_text = {
         .head = (ParsedNode *)malloc(sizeof(ParsedNode)),
         .now = parsed_text.head,
@@ -133,17 +162,22 @@ ParsedText parse_config_to_lines(char *fileName)
         .next = NULL,
     };
     ParsedNode *current = parsed_text.head;
+
     FILE *cfg_file = fopen(fileName, "r");
+    /* 初始化读取行缓冲区与转义行缓冲区 */
     char *buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
     char *conv_buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
-    int lines = 0;
+    // int lines = 0; // 没用的变量?
 
     if (parsed_text.head == NULL || cfg_file == NULL)
         return (ParsedText){NULL, NULL, 0};
 
+    // 行读取与解析
     char *ptmp = NULL, *desc_text = NULL;
     while (fgets(buffer, 3 * UTASK_MEM_BLOCK_SIZE * sizeof(char), cfg_file) != NULL)
     {
+        /* 初始化接受结构体. 不直接malloc是为了防止
+         * 遇到无效行或注释行时内存泄漏或浪费资源. */
         ParsedNode tmp_node = {
             .line = {
                 .level = get_str_level(buffer),
@@ -155,7 +189,9 @@ ParsedText parse_config_to_lines(char *fileName)
             .next = NULL,
         };
 
+        // ptmp前面的数据永远是用过的
         ptmp = buffer + tmp_node.line.level;
+        /* 获取属性名 */
         if ((ptmp = get_name_from_buffer(tmp_node.line.name, ptmp)) == NULL)
         {
             tmp_node.line.name[0] = 0;
@@ -165,6 +201,7 @@ ParsedText parse_config_to_lines(char *fileName)
         current->next = (ParsedNode *)malloc(sizeof(ParsedNode));
         *(current->next) = tmp_node;
 
+        /* 获取属性值 */
         int value_length = get_value_from_buffer(&ptmp, ptmp);
         if (value_length != 0)
         {
@@ -177,7 +214,7 @@ ParsedText parse_config_to_lines(char *fileName)
         current = current->next;
     }
     fclose(cfg_file);
-    free(buffer);
+    free(buffer), free(conv_buffer);
     return parsed_text;
 }
 
@@ -566,7 +603,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                     change_current_node(data_tree, "#..", 0); // tasklist.task.private.data => tasklist.task.private
                 }
                 break;
-                // case _BIG_EVENT: // 重大事件: private指向一个任务链表
+                // case _BIG_EVENT: // 重大事件: private指向一个任务链表 //敬请期待...
                 //     tasklist.now->next->task.priv_data = (TaskNode *)malloc(sizeof(TaskNode)); // 启动子列表
                 //     break;
 
@@ -589,7 +626,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
 bool destory_data_tree(ParsedText *data_tree)
 {
     ParsedNode *ptr_prev = data_tree->head;
-    for(ParsedNode *ptr = data_tree->head->child; ptr != NULL;)
+    for (ParsedNode *ptr = data_tree->head->child; ptr != NULL;)
     {
         free(ptr->line.value);
         free(ptr_prev);
