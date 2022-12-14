@@ -37,18 +37,11 @@ int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len)
             src++;
             switch (*src)
             {
-            case 'n':
-                *dest = '\n';
-                break;
-            case 't':
-                *dest = '\t';
-                break;
-            case '\"':
-                *dest = '\"';
-                break;
-            case '\\':
-            default:
-                *dest = '\\';
+                case 'n':  *dest = '\n'; break;
+                case 't':  *dest = '\t'; break;
+                case '\"': *dest = '\"'; break;
+                case '\\': default:
+                    *dest = '\\';
             }
         }
         else
@@ -516,7 +509,7 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                 tasklist.now->next->task.t_duedate_type = _CIRCULATE_WEEKLY;
                 for (int i = 1; node_guide->line.value[i] != 0x0; i++) // w后面接1234567或其一部分
                     if (node_guide->line.value[i] >= '1' && node_guide->line.value[i] <= '7')
-                        tasklist.now->next->task.t_duedate_type |= (0x01 << (node_guide->line.value[i] - '1'));
+                        tasklist.now->next->task.t_duedate_type |= (0x01 << (node_guide->line.value[i] - '0'));
             }
             change_current_node(data_tree, "#..", 0);
         }
@@ -557,9 +550,9 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             }
             else
                 sscanf(node_guide->line.value, "%d:%d:%d",
-                       tasklist.now->next->task.t_duetime + 2,
+                       tasklist.now->next->task.t_duetime,
                        tasklist.now->next->task.t_duetime + 1,
-                       tasklist.now->next->task.t_duetime);
+                       tasklist.now->next->task.t_duetime + 2);
             change_current_node(data_tree, "#..", 0);
         }
         // tasklist.task[tasks_count].time_ahead
@@ -579,9 +572,9 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
             }
             else
                 sscanf(node_guide->line.value, "%d:%d:%d",
-                       tasklist.now->next->task.time_ahead + 2,
+                       tasklist.now->next->task.time_ahead,
                        tasklist.now->next->task.time_ahead + 1,
-                       tasklist.now->next->task.time_ahead);
+                       tasklist.now->next->task.time_ahead + 2);
             change_current_node(data_tree, "#..", 0);
         }
         // tasklist.task[tasks_count].private
@@ -603,9 +596,9 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
                 else
                 {
                     if (node_guide->line.value == NULL || sscanf(node_guide->line.value, "%d:%d:%d",
-                                                                 (int *)tasklist.now->next->task.priv_data + 2,
+                                                                 (int *)tasklist.now->next->task.priv_data,
                                                                  (int *)tasklist.now->next->task.priv_data + 1,
-                                                                 (int *)tasklist.now->next->task.priv_data) < 3)
+                                                                 (int *)tasklist.now->next->task.priv_data + 2) < 3)
                     {
                         /*注意写法. 先写出private的完整路径, 然后强制类型转换为(int *), 然后当数组用*/
                         ((int *)tasklist.now->next->task.priv_data)[0] = 0;

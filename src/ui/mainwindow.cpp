@@ -1,8 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "ul_rebuild/utask_struct.h"
 #include "singletaskviewer.h"
-#include "ul_rebuild/utask_io.h"
+#include "../include/utask_struct.h"
+#include "../include/utask_io.h"
 
 #include <QtGui>
 #include <QMessageBox>

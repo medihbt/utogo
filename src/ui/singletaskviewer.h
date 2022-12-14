@@ -1,6 +1,6 @@
 #ifndef SINGLETASKVIEWER_H
 #define SINGLETASKVIEWER_H
-#include "ul_rebuild/utask_struct.h"
+#include "../include/utask_struct.h"
 
 #include <QWidget>
 

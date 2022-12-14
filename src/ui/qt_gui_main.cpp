@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "qt_gui.h"
 
 #include <QApplication>
 #include <QStyleFactory>
@@ -16,7 +17,7 @@ int qt_gui_main(int argc, char *argv[])
     return a.exec();
 }
 
-extern "C" void gplinfo(void)
+void gplinfo(void)
 {
     puts("Copyright (c) 2022-2023 Imagine Studio PBLF Group.");
     puts("This program is free software: you can redistribute it and/or modify");
@@ -31,17 +32,4 @@ extern "C" void gplinfo(void)
 
     puts("You should have received a copy of the GNU General Public License");
     puts("along with this program.  If not, see <https://www.gnu.org/licenses/>.");
-}
-
-extern "C" int main(int argc, char *argv[]){
-    if ((argc >= 2) && (!strcmp(argv[1], "--help")))
-    {
-        puts("U.toGo -- UniLife的简单任务清单程序");
-        printf("version %s\n", "0.0.1");
-        puts("\n本应用程序使用GNU GPLv3许可证. 以下是法律信息（英文）:");
-        gplinfo();
-        return 0;
-    }
-    qt_gui_main(argc,argv);
-    return 0;
 }

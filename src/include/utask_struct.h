@@ -44,8 +44,8 @@ enum UTask_Type {
 enum UTask_DueDate_Type {
     _ONCE     = 0x0,        // 一次
     // _TWICE,              // 1 连续两次
-    _EVERYDAY = 0x2,        // 2 每天
     _CIRCULATE_WEEKLY = 0x80000000, // 最高位取1时表示每周循环, 最低7位表示一周7天
+    _EVERYDAY = 0x800000FE,         // 每天
 };
 
 enum UTask_Sort_Order {
@@ -57,13 +57,14 @@ typedef struct
 {
     int t_id;           // ID
     bool finished;      // 是否完成
+    bool isNearArrive;  // 是否临近
     int ttype;          // 类型, 取值见enum UTask_Type
     char name[256];     // 任务名称
     char *desciption;   // 任务描述
     int t_duedate_type; // 指定什么时候到期, 取值见enum UTask_DueDate_Type
     int t_duedate[3];   // 到期日期(格式YY-MM-DD), 到期类型为_CIRCULATE_WEEKLY时为开始日期
-    int t_duetime[3];   // 到期时间(格式ss:mm:hh)seconds;minutes;hours;
-    int time_ahead[3];  // 提前多久提醒(格式ss:mm:hh)
+    int t_duetime[3];   // 到期时间(格式hh:mm:ss)
+    int time_ahead[3];  // 提前多久提醒(格式hh:mm:ss)
     void *priv_data;    // 私有数据, 根据ttype决定类型
 } TaskInfo;
 
@@ -89,10 +90,20 @@ typedef struct __tasklist_f
     uint64_t length;        // 清单长度
 } TaskList;
 
+/* 工具宏 */
+#define tmSeconds(array_time) ((array_time)[0] * 3600 + (array_time)[1] * 60 + (array_time)[2])
+
 /* 任务链表 */
 
+/* 函数: 按id搜索任务, 返回任务在链表中的位置，同时将任务前一项的指针
+ *       传给`prev_item`. 如果找不到，那么`prev_item = NULL`且函数返回`0`.
+ * 参数: (传入)链表头, 任务id, (传出)找到的前一项指针
+ * 返回: 记头节点为0号, 返回所求tid对应的任务在链表中的位置. 找不到时返回0.
+ * 属性: Private */
+int get_item_order(TaskNode *L, int tid, TaskNode **prev_item);
+
 /* 函数: 按任务对象在链表中的位置寻找对象, 可以理解为复杂度为O(n)
- * 版的tasknode[index]数组索引.
+ *       版的tasknode[index]数组索引.
  * 参数: 链表头, 链表索引号
  * 返回: 记链表头节点为0号, 返回index号节点的指针. */
 TaskNode *goto_item(TaskNode *L, int index);
@@ -102,6 +113,11 @@ TaskNode *goto_item(TaskNode *L, int index);
  *      [choice=0:尾插; 1:头插; n>1:从头节点算起第n个节点后]
  * 返回: 无  */
 bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice);
+
+/* 函数: 更新任务特征结构体的任务节点数量
+ * 参数: 指向待修改的特征结构体的指针
+ * 返回: 返回正数或0表示任务特征结构体的任务节点数量, 返回-1则表示失败*/
+int tasklist_length(TaskList *tasklist);
 
 /* 函数: 删除一个节点
  * 参数: 链表头, 任务id
@@ -118,10 +134,22 @@ TaskNode *search_node_by_id(TaskNode *L, int id);
  * 返回: 无 */
 bool change_node_by_id(TaskNode *L, TaskInfo tinfo, int id);
 
-/* 函数(未实现): 按时间对其排序
- * 参数: 头节点
- * 返回: void(需要修改) */
-void time_sort(TaskNode *L);
+/* 函数: 按照任务是否完成进行排序, 没有完成的排在前面
+ * 参数: 任务链表特征结构体
+ * 返回: 排序成功则返回0, 否则为其他值(见下面的宏定义) */
+int utask_sort_by_finished(TaskList *tasklist);
+
+/* 函数: 按时间对其排序
+ * 参数: 任务链表特征结构体
+ * 返回: 排序成功则返回0, 否则为其他值(见下面的宏定义) */
+int utask_sort_by_time(TaskList *tasklist);
+
+/* 函数: 按默认方式排序, 没做完的在前面, 做完的在后面, 两部分再按照时间排序
+ * 参数: 任务链表特征结构体
+ * 返回: 排序成功则返回0, 否则为其他值(见下面的宏定义) */
+int utask_sort_by_default(TaskList *tasklist);
+
+#define _U_WRONG_TASKLIST -1
 
 /* 函数: 输出任务id为id的任务(没必要, Qt前端会有类似实现)
  * 参数: 头节点，要查找的id
@@ -138,17 +166,10 @@ void put_all(TaskNode *L);
  * 返回: 无 */
 bool delet_all(TaskNode **L);
 
-/* 函数: 按照任务是否完成进行排序, 没有完成的排在前面(是吗?@楚楚)
- * 参数: 任务链表头节点
- * 返回: 排序成功则返回true, 否则为false */
-bool finished_sort(TaskNode *head);
-
 // 注释模板
 /* 函数:
  * 参数:
- * 返回:
- */
-
+ * 返回: */
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "ul_rebuild/utask_struct.h"
+#include "../include/utask_struct.h"
 #include "singletaskviewer.h"
 
 #include <QMainWindow>

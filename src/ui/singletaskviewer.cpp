@@ -1,6 +1,6 @@
 #include "singletaskviewer.h"
 #include "ui_singletaskviewer.h"
-#include "ul_rebuild/utask_struct.h"
+#include "../include/utask_struct.h"
 #include "mainwindow.h"
 
 #include <QDebug>

@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-#include "utask_timer.h"
+//#include "utask_timer.h"
 #include "utask_struct.h"
 #include <stdlib.h>
 #include <string.h>
@@ -43,8 +43,8 @@ typedef struct
 
 /* 一些杂项内联函数与宏定义函数 */
 
-/* 宏: 找到节点树的同级第一个节点(当前元素的长兄) */
-#define GetFirstInBrothers(parsed_node) ((parsed_node)->parent->child)
+/* 宏: 找到节点树的同级第一个节点 */
+#define GetFirstInChilds(parsed_node) ((parsed_node)->parent->child)
 
 /*内联函数: 打印n个tab字符
  *          (编译时插入调用者，写在头文件里)
