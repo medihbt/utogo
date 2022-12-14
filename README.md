@@ -26,9 +26,23 @@ git clone https://gitee.com/medihbt/utogo.git
 使用QMake：
 
 ```bash
+# 在项目根目录下:
+mkdir build/
 qmake6 -o build/Makefile
 cd build
 make
 ```
 
 拷贝生成的`utogo-bin`可执行文件到你喜欢的目录，然后就可以使用它了！
+
+## 鸣谢
+
+我在我们的PBLF大作业立项以前就有写一个任务管理程序的想法，而这个项目的实现离不开以下几位同学（以下示Gitee网名）。他们在PBLF期间作出了很大贡献:
+
+[[楚楚](https://gitee.com/aimvim)] -- 任务清单的数据结构实现
+
+[[yudanzhizhi](https://gitee.com/yudanz)] -- 文件IO部分与杂项代码的实现
+
+[[田所浩二](https://gitee.com/tadokoro_kouji)] -- 前端代码的实现
+
+[[丁嘉茵](https://gitee.com/johndingjiayin)] -- 文档的编写
