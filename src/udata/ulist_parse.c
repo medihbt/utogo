@@ -16,8 +16,8 @@
 #include "../include/utask_io.h"
 
 /*DEBUG用的宏*/
-#define UTASK_IO_DEBUG_C 1
-#define UTASK_IO_DEBUG_OUTPUT 1
+#define UTASK_IO_DEBUG_C 0
+#define UTASK_IO_DEBUG_OUTPUT 0
 #define UTASK_CONVERT 1
 
 #define UTASK_MEM_BLOCK_SIZE 1024
@@ -164,6 +164,18 @@ ParsedText parse_config_to_lines(char *fileName)
     ParsedNode *current = parsed_text.head;
 
     FILE *cfg_file = fopen(fileName, "r");
+    if (cfg_file == NULL)
+    {
+        fprintf(stderr, "ERROR message reported by function %s(): CANNOT open %s, please check whether the file exists"
+                        " or whether you have the permission to read this file.\n",
+                __func__, fileName);
+        free(parsed_text.head);
+        return (ParsedText){
+            .head = NULL,
+            .length = 0,
+            .now = NULL,
+        };
+    }
     /* 初始化读取行缓冲区与转义行缓冲区 */
     char *buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
     char *conv_buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));

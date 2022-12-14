@@ -29,7 +29,7 @@ typedef struct {
 /*函数: 定时器线程启动函数
  *参数: 任务清单*/
 
-/*函数: 定时器线程执行函数
+/*函数: 定时器执行函数
  *参数: 参数结构体*/
 void utask_timer(TimerArgument timer_argument);
 

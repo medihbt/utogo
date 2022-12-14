@@ -43,8 +43,8 @@ typedef struct
 
 /* 一些杂项内联函数与宏定义函数 */
 
-/* 宏: 找到节点树的同级第一个节点 */
-#define GetFirstInChilds(parsed_node) ((parsed_node)->parent->child)
+/* 宏: 找到节点树的同级第一个节点(当前元素的长兄) */
+#define GetFirstInBrothers(parsed_node) ((parsed_node)->parent->child)
 
 /*内联函数: 打印n个tab字符
  *          (编译时插入调用者，写在头文件里)
@@ -115,7 +115,6 @@ bool destory_data_tree(ParsedText *data_tree);
  *返回: 任务链表的特征结构体 */
 TaskList new_tasklist(char *list_file_name);
 
-/*以下函数未完成*/
 /* 函数: 根据结构体内容写回文本文件. 如果原本的文件存在，则清空重写.
  * 参数: 任务清单结构体, 要写入的文件
  * 返回: int 0表示成功, -1表示失败*/

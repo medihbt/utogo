@@ -16,7 +16,7 @@
 #include "../include/utask_io.h"
 #include "../include/err.h"
 
-#define UTASK_IO_DEBUG_MAIN 0
+#define UTASK_IO_DEBUG_MAIN 1
 
 const char *TASKLIST_DEFAULT_ORDER[1] = {
     "time",
@@ -31,6 +31,14 @@ const char *TASKLIST_TYPES[3] = {
 TaskList new_tasklist(char *list_file_name)
 {
     ParsedText parsed_text = parse_config_to_lines(list_file_name);
+    if (parsed_text.head == NULL)
+    {
+        fprintf(stderr, "ERROR message reported by function %s(): inavailible configuration file, or there is a bug in this program.\n", __func__);
+        return (TaskList){
+            .head = NULL,
+            .now = NULL,
+        };
+    }
     ParsedText *status = generate_data_tree(&parsed_text);
     if (status == NULL)
     {
@@ -131,23 +139,23 @@ int write_tasklist(TaskList *tasklist, const char *filename)
                 fprintf(fp_out, "\"\n");
             }
             else
-                fprintf(fp_out, "\t\tt_duedate_type: \"once\"\n");
+                fprintf(fp_out, "\"once\"\n");
             break;
         }
         // 2    t_duedate
         fprintf(fp_out, "\t\tt_duedate: \"%d-%02d-%02d\"\n",
-                ptr->task.t_duedate[0], 
-                ptr->task.t_duedate[1], 
+                ptr->task.t_duedate[0],
+                ptr->task.t_duedate[1],
                 ptr->task.t_duedate[2]);
         // 2    t_duetime
         fprintf(fp_out, "\t\tt_duetime: \"%02d:%02d:%02d\"\n",
-                ptr->task.t_duetime[2], 
-                ptr->task.t_duetime[1], 
+                ptr->task.t_duetime[2],
+                ptr->task.t_duetime[1],
                 ptr->task.t_duetime[0]);
         // 2    time_ahead
         fprintf(fp_out, "\t\ttime_ahead: \"%02d:%02d:%02d\"\n",
-                ptr->task.time_ahead[2], 
-                ptr->task.time_ahead[1], 
+                ptr->task.time_ahead[2],
+                ptr->task.time_ahead[1],
                 ptr->task.time_ahead[0]);
         // 2    private
         fprintf(fp_out, "\t\tprivate:\n");
@@ -160,7 +168,7 @@ int write_tasklist(TaskList *tasklist, const char *filename)
             if (ptr->task.priv_data == NULL)
                 fprintf(fp_out, "\t\t\ttimespan:\"00:00:00\"\n");
             else
-                fprintf(fp_out, "\t\t\ttimespan:\"%02d:%02d:%02d\"\n", 
+                fprintf(fp_out, "\t\t\ttimespan:\"%02d:%02d:%02d\"\n",
                         ((int *)ptr->task.priv_data)[2],
                         ((int *)ptr->task.priv_data)[1],
                         ((int *)ptr->task.priv_data)[0]);
@@ -174,9 +182,9 @@ int write_tasklist(TaskList *tasklist, const char *filename)
 }
 
 #if UTASK_IO_DEBUG_MAIN == 1
-int main(int argc, char *argv[]) //../../bootstrap/debug_examples/main.scene.txt
+int main(int argc, char *argv[])
 {
-    TaskList tasklist = new_tasklist("../../bootstrap/debug_examples/main.scene.txt");
+    TaskList tasklist = new_tasklist("../../bootstrap/debug_examples/main.scene");
     // TaskNode *test = search_node_by_id(tasklist.head, 4);
     printf("所有任务的最大id是 = %ld\n", tasklist.max_task_id);
     // printf("tasklist.task[4].duedate_type = %b\n", test->task.t_duedate_type);
