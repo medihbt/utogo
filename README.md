@@ -11,8 +11,9 @@
 QtCreator可以在[官网](https://qt.io)下载。对于Ubuntu用户，如果不想安装QtCreator，可以安装Qt库与`qmake`.以Qt6为例:
 
 ```shell
-sudo apt install qmake6 qmake6-bin # qmake6
-sudo apt install qt6-base-dev 
+sudo apt install qt6-base-dev-tools qmake6 qmake6-bin # qmake6
+sudo apt install qt6-base-dev libqt6opengl6-dev qt6-wayland-dev libfcitx5-qt6-dev # 编译所需的库
+sudo apt install libqt6core6 libqt6gui6 libqt6dbus6 qt6-wayland # 运行所需的库
 ```
 
 然后，克隆我的项目：
@@ -32,6 +33,8 @@ qmake6 -o build/Makefile
 cd build
 make
 ```
+
+或者直接运行项目根目录下的`build.sh`即可。
 
 拷贝生成的`utogo-bin`可执行文件到你喜欢的目录，然后就可以使用它了！
 
