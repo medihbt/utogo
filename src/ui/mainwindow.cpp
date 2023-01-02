@@ -41,8 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
 //        return;
 //    }
 //    headNode->next=nullptr;
-   mainList=new_tasklist(CONFIG_FILE_PATH);
-   headNode=mainList.head;
+    mainList=new_tasklist(CONFIG_FILE_PATH);
+    headNode=mainList.head;
 
     //set signals and slots for the widgets
     connect(ui->confirmButton,&QPushButton::clicked,[=]{
@@ -479,3 +479,28 @@ void MainWindow::closeEvent(QCloseEvent *event)
     this->hide();
     event->ignore();
 }
+
+/* Application Menus */
+
+void MainWindow::on_actMainExit_triggered()
+{
+    qApp->exit();
+}
+
+
+void MainWindow::on_actCloseWindow_triggered()
+{
+    QApplication::setQuitOnLastWindowClosed( true );
+    this->hide();
+}
+
+void MainWindow::on_actHelpAbout_triggered()
+{
+    on_showMainAction();
+}
+
+void MainWindow::on_actAboutUtoGo_triggered()
+{
+    on_showMainAction();
+}
+

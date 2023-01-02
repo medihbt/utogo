@@ -81,19 +81,24 @@ typedef struct __tasklist_f
     uint64_t l_id;          // 清单id
     char name[256];         // 清单名称
     char description[1024]; // 任务描述
-    int64_t  max_task_id;   // 所有任务id的最大值
-    uint32_t default_order; // 默认排序方式, 取值参见enum UTask_Sort_Order
+    int64_t max_task_id;    // 所有任务id的最大值
+    int32_t default_order;  // 默认排序方式, 取值参见enum UTask_Sort_Order
 
     /*task条目*/
     TaskNode *head;         // 任务头节点
     TaskNode *now;          // 默认状况下的当前节点
-    uint64_t length;        // 清单长度
+    int64_t  length;        // 清单长度
 } TaskList;
 
 /* 工具宏 */
 #define tmSeconds(array_time) ((array_time)[0] * 3600 + (array_time)[1] * 60 + (array_time)[2])
 
 /* 任务链表 */
+
+/* 函数: 比较两段日期的大小
+ * 参数: 指向两个任务节点的指针
+ * 返回: n1大于n2则返回1, n1=n2则返回0, n1<n2则返回-1*/
+int cmp_node_by_datetime(const TaskNode *n1, const TaskNode *n2);
 
 /* 函数: 按id搜索任务, 返回任务在链表中的位置，同时将任务前一项的指针
  *       传给`prev_item`. 如果找不到，那么`prev_item = NULL`且函数返回`0`.
@@ -108,11 +113,20 @@ int get_item_order(TaskNode *L, int tid, TaskNode **prev_item);
  * 返回: 记链表头节点为0号, 返回index号节点的指针. */
 TaskNode *goto_item(TaskNode *L, int index);
 
+#define _UTASK_INSERT_IN_THE_END -1 // 在末尾插入
 /* 函数: 插入一个任务对象
  * 参数: 任务链表头, 任务信息, 插入模式
  *      [choice=0:尾插; 1:头插; n>1:从头节点算起第n个节点后]
  * 返回: 无  */
 bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice);
+
+// 答辩后重构的新函数, 与上一个不兼容
+/* 函数: 在任务链表里插入一个节点, 插入的位置参见position的取值
+ * 参数: 待处理的任务链表, 待插入的任务节点, 任务位置描述
+ * 插入位置: -1(_UTASK_INSERT_IN_THE_END)表示附加到末尾, position
+ *           为非负整数n时表示以头节点为0号时, 在第n号末尾插入
+ * 返回: 是否成功, 成功返回true */
+bool utask_insert_f(TaskList *tasklist, TaskInfo taskinfo, int position);
 
 /* 函数: 更新任务特征结构体的任务节点数量
  * 参数: 指向待修改的特征结构体的指针
@@ -122,7 +136,7 @@ int tasklist_length(TaskList *tasklist);
 /* 函数: 删除一个节点
  * 参数: 链表头, 任务id
  * 返回: 成功(true) 失败(false) */
-bool utask_delet_one_node(TaskNode *L, char id);
+bool utask_delet_one_node(TaskNode *L, int id);
 
 /* 函数: 查找一个节点并打印
  * 参数: 头节点, 任务id

@@ -68,6 +68,14 @@ private slots:
     void on_showMainAction();
     void on_exitAppAction();
 
+    void on_actMainExit_triggered();
+
+    void on_actCloseWindow_triggered();
+
+    void on_actHelpAbout_triggered();
+
+    void on_actAboutUtoGo_triggered();
+
 protected:
     void closeEvent (QCloseEvent *event) override;
     void CheckCurrentTime();

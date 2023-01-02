@@ -1,0 +1,47 @@
+# encoding: utf-8
+# 此配置文件是U.toGo自动生成的, 用于存放U.toGo场景数据. 场景名称见list.name字段.
+# 如果你要手动修改文件数据, 请参见
+# <https://gitee.com/medihbt/utogo/blob/main/docs/format_unilist.md>.
+# 注意检查你的编辑器是否开启了tab转空格, 如果有, 请关闭.
+
+list: # the start of the list
+	l_id: "0"
+	name: "Untitled"
+	description: ""
+	default_order: "time"
+	task:
+		t_id: "1"
+		finished: "no"
+		type: "static"
+		name: "测试任务1"
+		description: "测试描述1"
+		t_duedate_type: "once"
+		t_duedate: "2000-01-01"
+		t_duetime: "00:00:00"
+		time_ahead: "16:00:00"
+		private:
+			NULL:
+	task:
+		t_id: "2"
+		finished: "no"
+		type: "static"
+		name: "测试任务2"
+		description: "测试描述2"
+		t_duedate_type: "once"
+		t_duedate: "2023-01-01"
+		t_duetime: "13:00:00"
+		time_ahead: "00:30:00"
+		private:
+			NULL:
+	task:
+		t_id: "3"
+		finished: "no"
+		type: "static"
+		name: "测试任务3"
+		description: "测试描述3"
+		t_duedate_type: "once"
+		t_duedate: "2022-12-31"
+		t_duetime: "20:00:00"
+		time_ahead: "16:00:00"
+		private:
+			NULL:

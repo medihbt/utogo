@@ -15,18 +15,17 @@ HEADERS = \
    $$PWD/src/include/utask_io.h \
    $$PWD/src/include/utask_struct.h \
    $$PWD/src/include/utask_timer.h \
+   $$PWD/src/libunilist/unilist.h \
    $$PWD/src/ui/mainwindow.h \
    $$PWD/src/ui/singletaskviewer.h \
-   $$PWD/src/ui/ui_mainwindow.h \
-   $$PWD/src/ui/ui_singletaskviewer.h \
    src/ui/qt_gui.h
 
 SOURCES = \
    $$PWD/src/os/timer.c \
    $$PWD/src/scene/multilist.c \
-   $$PWD/src/udata/ulist_parse.c \
    $$PWD/src/udata/utask_io.c \
    $$PWD/src/udata/utask_struct.c \
+   $$PWD/src/libunilist/ulist_read.c \
    $$PWD/src/ui/qt_gui_main.cpp \
    $$PWD/src/ui/mainwindow.cpp \
    $$PWD/src/ui/singletaskviewer.cpp \

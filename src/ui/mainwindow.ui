@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1172</width>
-    <height>886</height>
+    <width>1151</width>
+    <height>868</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,7 +44,7 @@
             <x>0</x>
             <y>0</y>
             <width>68</width>
-            <height>705</height>
+            <height>687</height>
            </rect>
           </property>
           <attribute name="label">
@@ -57,7 +57,7 @@
             <x>0</x>
             <y>0</y>
             <width>68</width>
-            <height>705</height>
+            <height>687</height>
            </rect>
           </property>
           <attribute name="label">
@@ -186,8 +186,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>631</width>
-               <height>669</height>
+               <width>610</width>
+               <height>651</height>
               </rect>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout">
@@ -960,7 +960,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
                           </property>
                           <layout class="QHBoxLayout" name="horizontalLayout_15">
                            <item>
-                            <widget class="QLabel" name="label_18">
+                            <widget class="QLabel" name="lblTip_TIME">
                              <property name="text">
                               <string>时间</string>
                              </property>
@@ -1089,46 +1089,58 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1172</width>
+     <width>1151</width>
      <height>25</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuU_togo">
+   <widget class="QMenu" name="menuUtoGo">
     <property name="title">
      <string>U.togo</string>
     </property>
-    <addaction name="menu_main_exit"/>
+    <addaction name="actCloseWindow"/>
+    <addaction name="actMainExit"/>
    </widget>
-   <widget class="QMenu" name="menu">
+   <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>编辑</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menu_2">
+   <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>帮助</string>
     </property>
-    <addaction name="action_2"/>
+    <addaction name="actAboutUtoGo"/>
    </widget>
-   <addaction name="menuU_togo"/>
-   <addaction name="menu"/>
-   <addaction name="menu_2"/>
+   <addaction name="menuUtoGo"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="menu_main_exit">
+  <action name="actCloseWindow">
+   <property name="text">
+    <string>关闭窗口</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actAboutUtoGo">
+   <property name="icon">
+    <iconset theme="help-about"/>
+   </property>
+   <property name="text">
+    <string>关于U.toGo...</string>
+   </property>
+  </action>
+  <action name="actMainExit">
    <property name="icon">
     <iconset theme="application-exit"/>
    </property>
    <property name="text">
-    <string>退出</string>
+    <string>退出应用</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
-   </property>
-  </action>
-  <action name="action_2">
-   <property name="text">
-    <string>关于</string>
    </property>
   </action>
  </widget>

@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+*.elf
 
 # 自定义的临时目录
 /build/
