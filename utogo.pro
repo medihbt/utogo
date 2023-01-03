@@ -18,18 +18,19 @@ HEADERS = \
    $$PWD/src/libunilist/unilist.h \
    $$PWD/src/ui/mainwindow.h \
    $$PWD/src/ui/singletaskviewer.h \
-   src/ui/qt_gui.h
+   $$PWD/src/ui/qt_gui.h
 
 SOURCES = \
    $$PWD/src/os/timer.c \
    $$PWD/src/scene/multilist.c \
    $$PWD/src/udata/utask_io.c \
    $$PWD/src/udata/utask_struct.c \
-   $$PWD/src/libunilist/ulist_read.c \
+   $$PWD/src/libunilist/ulist_io.c \
    $$PWD/src/ui/qt_gui_main.cpp \
    $$PWD/src/ui/mainwindow.cpp \
    $$PWD/src/ui/singletaskviewer.cpp \
-   $$PWD/src/main.c
+   $$PWD/src/main.c \
+   $$PWD/src/libunilist/unilist.c
 
 FORMS = \
    $$PWD/src/ui/mainwindow.ui \

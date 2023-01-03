@@ -59,11 +59,9 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
     // tasklist
     if ((node_guide = change_current_node(data_tree, "list", 0)) == NULL)
     {
-        tasklist = (TaskList){
-            .l_id = 0,
-            .max_task_id = 0,
-            .length = 0,
-        };
+        tasklist.l_id = 0;
+        tasklist.length = 0;
+        tasklist.max_task_id = 0;
         memcpy(tasklist.name, "Untitled List", 14);
         return tasklist;
     }
@@ -132,7 +130,6 @@ TaskList data_tree_to_tasklist(ParsedText *data_tree)
         };
 
         // tasklist.task[tasks_count].t_id      int -> int
-        int debug_var;
         if ((node_guide = change_current_node(data_tree, "t_id", 0)) == NULL)
             tasklist.now->next->task.t_id = -1;
         else

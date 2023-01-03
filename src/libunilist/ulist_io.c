@@ -1,4 +1,5 @@
-/*  Copyright (c) 2022-2023 Imagine Studio PBLF Group.
+/*  ulist_io.c -- unilist input and output
+ *  Copyright (c) 2022-2023 Imagine Studio PBLF Group.
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -324,40 +325,6 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
             return NULL;
     }
     return parsed_text->now;
-}
-
-bool append_child_node(ParsedText *data_tree, const char *name, const char *value)
-{
-    if (name == NULL || value == NULL)
-        return false;
-    else if (data_tree == NULL || data_tree->now == NULL)
-        return false;
-
-    ParsedNode *node = (ParsedNode *)malloc(sizeof(ParsedNode));
-    ParsedNode *prev = data_tree->now->next;
-    *node = (ParsedNode){
-        .child = NULL,
-        .parent = data_tree->now,
-        .next = data_tree->now->next,
-        .line = (TextLine){
-            .level = data_tree->now->line.level + 1,
-            .value = (char *)malloc(sizeof(char) * MAX_DESCRIPTION_SIZE),
-        },
-    };
-    strncpy(node->line.name, name, 256);
-    strncpy(node->line.value, value, MAX_DESCRIPTION_SIZE);
-    
-    if (data_tree->now->child == NULL)
-    {
-        data_tree->now->child = node;
-    }
-    else
-    {
-        while (prev->next != NULL)
-            prev = prev->next;
-        prev->next = node;
-    }
-    return true;
 }
 
 bool destory_data_tree(ParsedText *data_tree)

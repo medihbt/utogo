@@ -37,8 +37,8 @@ typedef struct __parsed
 typedef struct
 {
     ParsedNode *head;   // 头节点指针
-    ParsedNode *now;    // 参考用的当前节点
-    int length;         // 链表长度
+    ParsedNode *now;    // 当前节点, pivate
+    int length;         // 链表/语义树的节点个数
 } ParsedText;
 
 
@@ -80,7 +80,7 @@ int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len);
 int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest_len);
 
 
-/* 清单文件的操作函数 */
+/* 清单文件读取接口 */
 
 /* 函数: 读入清单文件并拆成小行
  * 参数: 清单文件名
@@ -101,11 +101,30 @@ ParsedText *generate_data_tree(ParsedText *parsed_text);
  * 返回: 成功则返回找到的节点指针, 失败则返回NULL. */
 ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order);
 
+/* 函数: 在当前节点下附加子节点, 子节点始终附加到最后一个
+ * 参数: 语义树指针, 子节点名称, 子节点值
+ * 返回: 成功/失败 */
+bool append_child_node(ParsedText *data_tree, const char *name, const char *value);
+
+/* 函数: 打印当前节点及其所有子节点构成的子树到目标文件
+ * 参数: 重组完成的语义树, 目标文件结构体指针
+ * 返回: 打印节点的数量 */
+int u_print_current_subtree(const ParsedText *parsed_text, FILE *__stream);
+
+/* 函数: 打印语义树到目标文件
+ * 参数: 重组完成的语义树, 目标文件结构体指针
+ * 返回: 打印节点的数量 */
+int u_print_data_tree(const ParsedText *parsed_text, FILE *__stream);
+
+/* 函数: 把当前节点的所有下一级子节点串成数组, 类似于ls
+ * 参数: 重组完成的链表
+ * 返回: 节点数组的首元素指针 */
+TextLine *u_list_current_subnode(const ParsedText *parsed_text);
+
 /* 函数: 销毁语义树
  * 参数: 指向语义树的指针
  * 返回: bool成功或失败 */
 bool destory_data_tree(ParsedText *data_tree);
-
 
 #ifdef __cplusplus
 }
