@@ -44,6 +44,7 @@ int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len)
         }
         else
             *dest = *src;
+
         src++, dest++, conv_len++;
     }
     *dest = '\0';
@@ -54,37 +55,32 @@ int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest
 {
     if (dest == NULL || src == NULL)
         return -1;
+
     int64_t unconv_len = 0;
     while (*src != '\0' && unconv_len < dest_len - 1)
     {
         switch (*src)
         {
         case '\\':
-            *(dest++) = '\\';
-            *dest = '\\';
+            *(dest++) = '\\'; *dest = '\\';
             unconv_len++;
             break;
         case '\t':
-            *(dest++) = '\\';
-            *dest = 't';
+            *(dest++) = '\\'; *dest = 't';
             unconv_len++;
             break;
         case '\n':
-            *(dest++) = '\\';
-            *dest = 'n';
+            *(dest++) = '\\'; *dest = 'n';
             unconv_len++;
             break;
         case '\"':
-            *(dest++) = '\\';
-            *dest = '\"';
+            *(dest++) = '\\'; *dest = '\"';
             unconv_len++;
         default:
             *dest = *src;
             break;
         }
-        dest++;
-        src++;
-        unconv_len++;
+        dest++, src++, unconv_len++;
     }
     *dest = '\0';
     return unconv_len;

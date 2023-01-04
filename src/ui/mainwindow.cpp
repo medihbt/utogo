@@ -48,6 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->confirmButton,&QPushButton::clicked,[=]{
         ConfirmTask(headNode, mainList.max_task_id + 1);
         mainList.max_task_id++;
+        tasklist_length(&mainList);
     });
     connect(statBtn,&QPushButton::clicked,[=]{
         Refresh();

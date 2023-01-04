@@ -139,7 +139,7 @@ int tasklist_length(TaskList *tasklist)
 bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice) // 插入//1头插，0尾插，choice为newnode为第i个节点
 {
     TaskNode *next, *newnode;
-    int i = 2, u = 1;
+    int i = 2;
     newnode = (TaskNode *)malloc(sizeof(TaskNode));
     if (newnode == NULL)
         return false;
@@ -151,12 +151,9 @@ bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice) // 插入//1头插，
     {
         L->next = newnode;
         newnode->next = next;
-        // newnode->task.t_id = u;
         while (next != NULL)
         {
-            // next->task.t_id = u+1;
             next = next->next;
-            u++;
         }
     }
     else
@@ -166,7 +163,6 @@ bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice) // 插入//1头插，
             if (next == NULL)
             {
                 L->next = newnode;
-                // newnode->task.t_id = 1;
             }
             else
             {
@@ -174,7 +170,6 @@ bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice) // 插入//1头插，
                     next = next->next;
 
                 next->next = newnode;
-                // newnode->task.t_id = next ->task.t_id + 1;
             }
         }
         else
@@ -190,13 +185,9 @@ bool utask_insert(TaskNode *L, TaskInfo tinfo, int choice) // 插入//1头插，
                 {
                     newnode->next = next->next;
                     next->next = newnode;
-                    // newnode->task.t_id = next ->task.t_id+1;
-                    // u = newnode->task.t_id+1;
                     next = newnode->next;
                     while (next != NULL)
                     {
-                        // next->task.t_id = u;
-                        // u++;
                         next = next->next;
                     }
                     break;

@@ -16,6 +16,8 @@
 
 #include "unilist.h"
 
+#define __LIBUNILIST_DEBUG_MAIN 0
+
 bool append_child_node(ParsedText *data_tree, const char *name, const char *value)
 {
     if (name == NULL || value == NULL)
@@ -89,6 +91,7 @@ int u_print_data_tree(const ParsedText *parsed_text, FILE *__stream)
     return u_print_current_subtree(&dump_text, __stream);
 }
 
+#if __LIBUNILIST_DEBUG_MAIN == 1
 int main(void)
 {
     ParsedText data = parse_config_to_lines("../../bootstrap/dbg_samples/main.scene");
@@ -101,3 +104,4 @@ int main(void)
     u_print_current_subtree(&data, stdout);
     return 0;
 }
+#endif
