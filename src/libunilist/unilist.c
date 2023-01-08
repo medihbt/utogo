@@ -18,6 +18,52 @@
 
 #define __LIBUNILIST_DEBUG_MAIN 0
 
+ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order)
+{
+    if (parsed_text == NULL || node_name == NULL || node_order < 0)
+        return NULL;
+    else if (parsed_text->head == NULL || parsed_text->head->child == NULL)
+        return NULL;
+    else if (parsed_text->now == NULL)
+        return NULL;
+
+    ParsedNode *ptext_now_dump = parsed_text->now;
+
+    if (!strcmp(node_name, "#..")) // "#.."返回父节点，灵感来源于上一级文件夹(名称为"..")
+    {
+        if (parsed_text->now->parent == NULL)
+            return NULL;
+        else
+            parsed_text->now = parsed_text->now->parent;
+    }
+    else if (!strcmp(node_name, "#/") || !strcmp(node_name, "#HEAD")) // "#/"或"#HEAD"返回头节点
+    {
+        parsed_text->now = parsed_text->head;
+    }
+    else // 找寻名称为node_name的子节点
+    {
+        if (parsed_text->now->child == NULL)
+            return NULL;
+
+        ParsedNode *ptr = parsed_text->now->child;
+        int ptr_level = ptr->line.level;
+
+        int order_count = 0;
+        while ((ptr != NULL) && (ptr->line.level == ptr_level) && (order_count <= node_order))
+        {
+            if (!strcmp(ptr->line.name, node_name))
+            {
+                order_count++;
+                parsed_text->now = ptr;
+            }
+            ptr = ptr->next;
+        }
+        if ((parsed_text->now == ptext_now_dump) || (order_count <= node_order))
+            return NULL;
+    }
+    return parsed_text->now;
+}
+
 bool append_child_node(ParsedText *data_tree, const char *name, const char *value)
 {
     if (name == NULL || value == NULL)
@@ -52,43 +98,18 @@ bool append_child_node(ParsedText *data_tree, const char *name, const char *valu
     return true;
 }
 
-int u_print_current_subtree(const ParsedText *parsed_text, FILE *__stream)
+bool destory_data_tree(ParsedText *data_tree)
 {
-    int level = 0, nodes = 0;
-    char buff[MAX_DESCRIPTION_SIZE];
-    ParsedNode *ptr = parsed_text->now;
-    do {
-        print_n_tab(__stream, level);
-        if (unconvert_string_from_tasklist(buff, ptr->line.value, MAX_DESCRIPTION_SIZE) == -1)
-        {
-            buff[0]= 0;
-            fprintf(__stream, "%s:\n", ptr->line.name);
-        }
-        else 
-            fprintf(__stream, "%s: \"%s\"\n", ptr->line.name, buff);
-        nodes++;
-
-        if (ptr->child != NULL)     // 有子节点, 切换到子节点
-            level++, ptr = ptr->child;
-        else if (ptr->next != NULL) // 否则切换到下一级或者下一个父节点
-        {
-            level -= (ptr->line.level - ptr->next->line.level);
-            ptr = ptr->next;
-        }
-        else break;
-    } while (level > 0);
-    return nodes;
-}
-
-int u_print_data_tree(const ParsedText *parsed_text, FILE *__stream)
-{
-    if (parsed_text == NULL || parsed_text->head == NULL)
-        return -1;
-    ParsedText dump_text = (ParsedText){
-        .now = parsed_text->head->child,
-        .length = parsed_text->length,
-    };
-    return u_print_current_subtree(&dump_text, __stream);
+    ParsedNode *ptr_prev = data_tree->head;
+    for (ParsedNode *ptr = data_tree->head->child; ptr != NULL;)
+    {
+        free(ptr->line.value);
+        free(ptr_prev);
+        ptr_prev = ptr;
+        ptr = ptr->child != NULL ? ptr->child : ptr->next;
+    }
+    free(ptr_prev);
+    return true;
 }
 
 #if __LIBUNILIST_DEBUG_MAIN == 1

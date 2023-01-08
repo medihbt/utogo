@@ -119,7 +119,7 @@ int u_print_data_tree(const ParsedText *parsed_text, FILE *__stream);
 /* 函数: 把当前节点的所有下一级子节点串成数组, 类似于ls
  * 参数: 重组完成的链表
  * 返回: 节点数组的首元素指针 */
-TextLine *u_list_current_subnode(const ParsedText *parsed_text);
+
 
 /* 函数: 销毁语义树
  * 参数: 指向语义树的指针
