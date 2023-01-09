@@ -17,7 +17,7 @@
 #include "unilist.h"
 
 /*内部宏包*/
-#define UTASK_MEM_BLOCK_SIZE 1024
+#define ULIST_MEM_BLOCK_SIZE 1024
 
 
 /*字符串转义与反转义*/
@@ -43,15 +43,16 @@ int64_t convert_string_from_file(char *dest, const char *src, int64_t dest_len)
             }
         }
         else
+        {
             *dest = *src;
-
+        }
         src++, dest++, conv_len++;
     }
     *dest = '\0';
     return conv_len;
 }
 
-int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest_len)
+int64_t unconvert_string_from_ulist(char *dest, const char *src, int64_t dest_len)
 {
     if (dest == NULL || src == NULL)
         return -1;
@@ -86,9 +87,9 @@ int64_t unconvert_string_from_tasklist(char *dest, const char *src, int64_t dest
     return unconv_len;
 }
 
-/*配置文件读取*/
-// 第一阶段
-// 工具函数
+/* 配置文件读取 */
+// 第一阶段 - 工具函数
+
 char *get_name_from_buffer(char *dest, char *buff)
 {
     char *cur = dest;
@@ -131,15 +132,15 @@ int get_value_from_buffer(char **p_begin_out, char *buff)
     return buff - *p_begin_out;
 }
 
-ParsedText parse_config_to_lines(char *fileName)
+UniListObject ulist_config_to_lines(FILE *cfg_fp)
 {
-    /*初始化行链表的特征结构体*/
-    ParsedText parsed_text = {
-        .head = (ParsedNode *)malloc(sizeof(ParsedNode)),
+    /* 初始化行链表的特征结构体 */
+    UniListObject parsed_text = {
+        .head = (UListNode *)malloc(sizeof(UListNode)),
         .now = parsed_text.head,
         .length = 0,
     };
-    *(parsed_text.head) = (ParsedNode){
+    *(parsed_text.head) = (UListNode){
         .line = (TextLine){
             .level = -1,
             .name = "HEAD",
@@ -149,35 +150,25 @@ ParsedText parse_config_to_lines(char *fileName)
         .child = NULL,
         .next = NULL,
     };
-    ParsedNode *current = parsed_text.head;
+    UListNode *current = parsed_text.head;
 
-    FILE *cfg_file = fopen(fileName, "r");
-    if (cfg_file == NULL)
-    {
-        fprintf(stderr, "ERROR message reported by function %s(): CANNOT open '%s', please check whether the file exists"
-                        " or whether you have the permission to read this file.\n",
-                __func__, fileName);
-        free(parsed_text.head);
-        return (ParsedText){
-            .head = NULL,
-            .length = 0,
-            .now = NULL,
-        };
-    }
     /* 初始化读取行缓冲区与转义行缓冲区 */
-    char *buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
-    char *conv_buffer = (char *)calloc(4 * UTASK_MEM_BLOCK_SIZE, sizeof(char));
+    char *buffer = (char *)calloc(4 * ULIST_MEM_BLOCK_SIZE, sizeof(char));
+    char *conv_buffer = (char *)calloc(4 * ULIST_MEM_BLOCK_SIZE, sizeof(char));
 
-    if (parsed_text.head == NULL || cfg_file == NULL)
-        return (ParsedText){NULL, NULL, 0};
+    if (((size_t)(parsed_text.head) | (size_t)buffer | (size_t)conv_buffer | (size_t)cfg_fp) == NULL)
+    {
+        free(parsed_text.head), free(buffer), free(conv_buffer);
+        return (UniListObject){NULL, NULL, 0};
+    }
 
     // 行读取与解析
     char *ptmp = NULL;
-    while (fgets(buffer, 3 * UTASK_MEM_BLOCK_SIZE * sizeof(char), cfg_file) != NULL)
+    while (fgets(buffer, 4 * ULIST_MEM_BLOCK_SIZE * sizeof(char), cfg_fp) != NULL)
     {
         /* 初始化接受结构体. 不直接malloc是为了防止
          * 遇到无效行或注释行时内存泄漏或浪费资源. */
-        ParsedNode tmp_node = {
+        UListNode tmp_node = {
             .line = {
                 .level = get_str_level(buffer),
                 .name = {0},
@@ -197,7 +188,7 @@ ParsedText parse_config_to_lines(char *fileName)
             continue;
         }
 
-        current->next = (ParsedNode *)malloc(sizeof(ParsedNode));
+        current->next = (UListNode *)malloc(sizeof(UListNode));
         *(current->next) = tmp_node;
 
         /* 获取属性值 */
@@ -212,32 +203,31 @@ ParsedText parse_config_to_lines(char *fileName)
         }
         current = current->next;
     }
-    fclose(cfg_file);
     free(buffer), free(conv_buffer);
     return parsed_text;
 }
 
 /*配置文件解析: 第二阶段*/
-ParsedText *generate_data_tree(ParsedText *parsed_text)
+UniListObject *ulist_generate_data_tree(UniListObject *line_list)
 {
-    if (parsed_text == NULL)
+    if (line_list == NULL)
         return NULL;
 
     /*令所有节点成为头节点的子节点*/
-    ParsedNode *parsed_head = parsed_text->head;
-    parsed_head->child = parsed_head->next;
-    parsed_head->child->parent = parsed_head;
+    UListNode *line_list_head = line_list->head;
+    line_list_head->child = line_list_head->next;
+    line_list_head->child->parent = line_list_head;
 
     /*创建指针栈*/
-    ParsedNode *content[16] = {parsed_head, NULL};
-    ParsedNode **base = content + 1, **top = content + 1;
+    UListNode *content[16] = {line_list_head, NULL};
+    UListNode **base = content + 1, **top = content + 1;
 
-    ParsedNode *ptr_op = parsed_head->child, *ptr_prev = parsed_head;
+    UListNode *ptr_op = line_list_head->child, *ptr_prev = line_list_head;
     *top = ptr_op;
     while (ptr_op != NULL)
     {
         top = base + ptr_op->line.level;
-        ParsedNode *ptmp = NULL;
+        UListNode *ptmp = NULL;
         int delta_level = ptr_op->line.level - ptr_prev->line.level;
         if (delta_level >= 2)
         {
@@ -270,18 +260,19 @@ ParsedText *generate_data_tree(ParsedText *parsed_text)
         ptr_prev = ptr_op;
         ptr_op = ptr_op->next;
     }
-    parsed_text->head->next = NULL;
-    return parsed_text;
+    line_list->head->next = NULL;
+    return line_list;
 }
 
-int u_print_current_subtree(const ParsedText *parsed_text, FILE *__stream)
+/* UniList的输出 */
+int ulist_print_current_subtree(const UniListObject *parsed_text, FILE *__stream)
 {
     int level = 0, nodes = 0;
     char buff[MAX_DESCRIPTION_SIZE];
-    ParsedNode *ptr = parsed_text->now;
+    UListNode *ptr = parsed_text->now;
     do {
         print_n_tab(__stream, level);
-        if (unconvert_string_from_tasklist(buff, ptr->line.value, MAX_DESCRIPTION_SIZE) == -1)
+        if (unconvert_string_from_ulist(buff, ptr->line.value, MAX_DESCRIPTION_SIZE) == -1)
         {
             buff[0]= 0;
             fprintf(__stream, "%s:\n", ptr->line.name);
@@ -302,19 +293,18 @@ int u_print_current_subtree(const ParsedText *parsed_text, FILE *__stream)
     return nodes;
 }
 
-int u_print_data_tree(const ParsedText *parsed_text, FILE *__stream)
+int ulist_print(const UniListObject *parsed_text, FILE *__stream)
 {
     if (parsed_text == NULL || parsed_text->head == NULL)
         return -1;
 
-    ParsedText dump_text = (ParsedText){
+    UniListObject dump_text = (UniListObject){
         .now = parsed_text->head->child,
         .length = parsed_text->length,
     };
     int ret = 0;
-    do
-    {
-        ret += u_print_current_subtree(&dump_text, __stream);
+    do {
+        ret += ulist_print_current_subtree(&dump_text, __stream);
         dump_text.now = dump_text.now->next;
     } while (dump_text.now != NULL);
     return ret;

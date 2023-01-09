@@ -1,4 +1,4 @@
-/*  unilist.c -- main part of libunilist
+/*  @file unilist.c -- main part of libunilist
     Copyright (c) 2022-2023 Imagine Studio PBLF Group.
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,7 +18,43 @@
 
 #define __LIBUNILIST_DEBUG_MAIN 0
 
-ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, int node_order)
+/* UniList的构造函数 */
+
+UniListObject *ulist_new_object(void)
+{
+    UniListObject *ret = (UniListObject *)malloc(sizeof(UniListObject));
+    *ret = (UniListObject){
+        .head = (UListNode *)malloc(sizeof(UListNode)),
+        .length = 0,
+    };
+    *(ret->head) = (UListNode){
+        .line = (TextLine){
+            .level = -1,
+            .name = "#HEAD",
+            .value = "UNILIST",
+        },
+        .next = NULL,
+        .child = NULL,
+        .parent = NULL,
+    };
+    return ret;
+}
+
+UniListObject *ulist_object_from_file(FILE *list_fp)
+{
+    UniListObject *ret = (UniListObject *)malloc(sizeof(UniListObject));
+    *ret = ulist_config_to_lines(list_fp);
+    if (ulist_generate_data_tree(ret) == NULL)
+        fprintf(stderr, "ERROR message reported by function %s(): incorrect"
+                        " configuration file, or there is a bug in this program.\n",
+                __func__);
+    return ret;
+}
+
+
+/* UniList对象的方法 */
+
+UListNode *ulist_change_current_node(UniListObject *parsed_text, const char *node_name, int node_order)
 {
     if (parsed_text == NULL || node_name == NULL || node_order < 0)
         return NULL;
@@ -27,7 +63,7 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
     else if (parsed_text->now == NULL)
         return NULL;
 
-    ParsedNode *ptext_now_dump = parsed_text->now;
+    UListNode *ptext_now_dump = parsed_text->now;
 
     if (!strcmp(node_name, "#..")) // "#.."返回父节点，灵感来源于上一级文件夹(名称为"..")
     {
@@ -45,7 +81,7 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
         if (parsed_text->now->child == NULL)
             return NULL;
 
-        ParsedNode *ptr = parsed_text->now->child;
+        UListNode *ptr = parsed_text->now->child;
         int ptr_level = ptr->line.level;
 
         int order_count = 0;
@@ -64,16 +100,16 @@ ParsedNode *change_current_node(ParsedText *parsed_text, const char *node_name, 
     return parsed_text->now;
 }
 
-bool append_child_node(ParsedText *data_tree, const char *name, const char *value)
+bool ulist_append_child_node(UniListObject *data_tree, const char *name, const char *value)
 {
     if (name == NULL || value == NULL)
         return false;
     else if (data_tree == NULL || data_tree->now == NULL)
         return false;
 
-    ParsedNode *node = (ParsedNode *)malloc(sizeof(ParsedNode));
-    ParsedNode *prev = data_tree->now->next;
-    *node = (ParsedNode){
+    UListNode *node = (UListNode *)malloc(sizeof(UListNode));
+    UListNode *prev = data_tree->now->next;
+    *node = (UListNode){
         .child = NULL,
         .parent = data_tree->now,
         .next = data_tree->now->next,
@@ -98,10 +134,12 @@ bool append_child_node(ParsedText *data_tree, const char *name, const char *valu
     return true;
 }
 
-bool destory_data_tree(ParsedText *data_tree)
+/* UniList的析构函数 */
+
+bool ulist_destory_object(UniListObject *data_tree)
 {
-    ParsedNode *ptr_prev = data_tree->head;
-    for (ParsedNode *ptr = data_tree->head->child; ptr != NULL;)
+    UListNode *ptr_prev = data_tree->head;
+    for (UListNode *ptr = data_tree->head->child; ptr != NULL;)
     {
         free(ptr->line.value);
         free(ptr_prev);
@@ -115,14 +153,14 @@ bool destory_data_tree(ParsedText *data_tree)
 #if __LIBUNILIST_DEBUG_MAIN == 1
 int main(void)
 {
-    ParsedText data = parse_config_to_lines("../../bootstrap/dbg_samples/main.scene");
-    generate_data_tree(&data);
-    change_current_node(&data, "#/", 0);
-    change_current_node(&data, "list", 0);
-    change_current_node(&data, "task", 0);
-    u_print_data_tree(&data, stdout);
+    UniListObject data = ulist_config_to_lines("../../bootstrap/dbg_samples/main.scene");
+    ulist_generate_data_tree(&data);
+    ulist_change_current_node(&data, "#/", 0);
+    ulist_change_current_node(&data, "list", 0);
+    ulist_change_current_node(&data, "task", 0);
+    ulist_print(&data, stdout);
     puts("================================");
-    u_print_current_subtree(&data, stdout);
+    ulist_print_current_subtree(&data, stdout);
     return 0;
 }
 #endif

@@ -15,7 +15,7 @@ extern "C" {
 /* 函数: 读取整理好的文本树, 转化为Tasklist链表
  * 参数: 构造好的语义树指针
  * 返回: 构造好的TaskList */
-TaskList data_tree_to_tasklist(ParsedText *data_tree);
+TaskList data_tree_to_tasklist(UniListObject *data_tree);
 
 /*函数: 读取清单文件, 生成任务链表
  *参数: 文件名
